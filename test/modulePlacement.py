@@ -110,7 +110,58 @@ def fromArmToGlobalSystem(r, x):
         return True, newx
 
 
+def fromArmToCameraSystem(param, x):
 
+    delta = np.asarray([param[0], param[1], param[2]])
+    v = x - delta
+    phix = param[3]
+    phiy = param[4]
+    phiz = param[5]
+    #RotX
+    matxnom_ = [[1.0, 0, 0],
+                [0.0, np.cos(-phix), -np.sin(-phix)],
+                [0.0, np.sin(-phix), np.cos(-phix)]]
+    matxnom = np.asmatrix(matxnom_)
+    #RotY
+    matynom_ = [[np.cos(-phiy), 0.0, -np.sin(-phiy)],
+                [0.0, 1.0, 0.0],
+                [np.sin(-phiy), 0.0, np.cos(-phiy)]]
+    matynom = np.asmatrix(matynom_)
+    #RotZ
+    matznom_ = [[np.cos(-phiz), -np.sin(-phiz), 0.0],
+                [np.sin(-phiz), np.cos(-phiz), 0.0],
+                [0.0, 0.0, 1.0]]
+    matznom = np.asmatrix(matznom_)                                                                                                                                                                         15,1           7%
+    rotnom = matxnom.dot(matynom.dot(matznom))
+    newv = np.asarray(rotnom.dot(v))[0]
+    return True, newv
+
+
+def fromCameraToArmSystem(param, x):
+
+    delta = np.asarray([param[0], param[1], param[2]])
+    phix = param[3]
+    phiy = param[4]
+    phiz = param[5]
+    #RotX
+    matxnom_ = [[1.0, 0, 0],
+                [0.0, np.cos(phix), -np.sin(phix)],
+                [0.0, np.sin(phix), np.cos(phix)]]
+    matxnom = np.asmatrix(matxnom_)
+    #RotY
+    matynom_ = [[np.cos(phiy), 0.0, -np.sin(phiy)],
+                [0.0, 1.0, 0.0],
+                [np.sin(phiy), 0.0, np.cos(phiy)]]
+    matynom = np.asmatrix(matynom_)
+    #RotZ
+    matznom_ = [[np.cos(phiz), -np.sin(phiz), 0.0],
+                [np.sin(phiz), np.cos(phiz), 0.0],
+                [0.0, 0.0, 1.0]]
+    matznom = np.asmatrix(matznom_)                                                                                                                                                                         15,1           7%
+    rotnom = matxnom.dot(matynom.dot(matznom))
+    v = np.asarray(rotnom.dot(x))[0]
+    newv = v + delta
+    return True, newv
 
 
 if __name__=='__main__':
