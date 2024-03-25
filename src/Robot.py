@@ -5,11 +5,13 @@ import numpy as np
 
 class Robot:
 
-    def __init__(self, R1, R2):
+    def __init__(self, R1, R2, sigmaRobot, sigmaCamera):
 
         self.R1 = R1
         self.R2 = R2
         self.tol = 1e-5
+        self.sigmaRobot = sigmaRobot
+        self.sigmaCamera = sigmaCamera
 
     #Auxiliary function
     def angleFromSineCosine(self, s, c):
@@ -176,7 +178,27 @@ def fromGlobalToCameraSystem(self, x, r):
     valid, plocalarm = self.fromGlobalToArmSystem(x, r)
     if not valid:
         return False, np.asarray([0,0,0])
-    valid, pcamera = self.fromArmToCameraSystem(x)
+    valid, pcamera = self.fromArmToCameraSystem(plocalarm)
     if not valid:
         return False, np.asarray([0,0,0])
     return True, pcamera
+
+
+def takeMeasurements(self, points):
+    measurements = []
+    for p in points:
+        x = np.random.normal(p[0], self.sigmaRobot)[0]
+        y = np.random.normal(p[1], self.sigmaRobot)[0]
+        z = p[2]
+        measurements.append([x, y, z])
+    return measurements  
+
+def takeCameraMeasurements(self, points)
+    measurements = []
+    for p in points:
+        valid, ppoint = self.fromGlobalToCameraSystem(self, p, p)
+        if not valid:
+            print("Reference point out of range")
+            sys.exit()
+        measurements.append(ppoint)
+    return measurements
