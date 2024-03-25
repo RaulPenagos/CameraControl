@@ -7,11 +7,11 @@ from src.Table import Table
 if __name__=='__main__':
 
 
-
-    robot = Robot(30.0, 30.0, 0.1, 0.1)
-    table = Table()
+    cameraCoordinates = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    robot = Robot(50.0, 50.0, cameraCoordinates, 0.1, 0.1)
     
-    table.generatePointsInSquare(10.0, 10.0, -20.0, 40.0)  
+    table = Table()
+    table.generatePointsInSquare(30.0, 30.0, -20.0, 30.0)  
    
     robotMeasurements = robot.takeMeasurements(table.points)
     cameraMeasurements = robot.takeCameraMeasurements(table.points)
@@ -20,9 +20,34 @@ if __name__=='__main__':
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
     
-    ax1.plot(table.points[:][0], table.points[:][1])
+    thePoints = table.toNumpy(table.points)
+    theRobotMeasurements = table.toNumpy(robotMeasurements)
+    theCameraMeasurements = table.toNumpy(cameraMeasurements)
+
+    xReal = thePoints[:,0]
+    yReal = thePoints[:,1]
+    xRobot = theRobotMeasurements[:, 0]
+    yRobot = theRobotMeasurements[:, 1]
+    xCamera = theCameraMeasurements[:, 0]
+    yCamera = theCameraMeasurements[:, 1]
+
+    ax1.set_xlim(left = 0, right=100.0)
+    ax1.set_ylim(bottom=0.0, top=100.0)
+    ax1.set_xlabel('x [cm]')
+    ax1.set_ylabel('y [cm]')
+    ax1.plot(xReal, yReal, 'b*')
+    ax1.plot(xRobot, yRobot, 'r*')
+
+    ax2.set_xlim(left=0, right=100.0)
+    ax2.set_ylim(bottom=-50.0, top=50.0)
+    ax2.set_xlabel('x [cm]')
+    ax2.set_ylabel('y [cm]')
+    ax2.plot(xCamera, yCamera, 'r*')
+
+
+
     plt.show()
-    
+
 
 
     

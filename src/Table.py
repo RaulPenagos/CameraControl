@@ -10,6 +10,9 @@ class Table:
     def addReferencePoint(self, x, y, z):
         self.points.append(np.asarray([x,y,z]))
     
+    def toNumpy(self, p):
+        return np.asmatrix(p)
+    
     def generatePointsInSquare(self, x0, y0, z0, L):
 
         x1 = x0 

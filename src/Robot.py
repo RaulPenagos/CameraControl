@@ -1,17 +1,19 @@
 import numpy as np
+import sys
 
 
 
 
 class Robot:
 
-    def __init__(self, R1, R2, sigmaRobot, sigmaCamera):
+    def __init__(self, R1, R2, camera, sigmaRobot, sigmaCamera):
 
         self.R1 = R1
         self.R2 = R2
         self.tol = 1e-5
         self.sigmaRobot = sigmaRobot
         self.sigmaCamera = sigmaCamera
+        self.param = camera
 
     #Auxiliary function
     def angleFromSineCosine(self, s, c):
@@ -23,16 +25,15 @@ class Robot:
     #Auxiliary function to check whether two points are the same
     def checkValidConversion(self, v, j):
 
-        x = R1 * np.cos(j[0]) + R2 * np.cos(j[1])
-        y = R1 * np.sin(j[0]) + R2 * np.sin(j[1])
+        x = self.R1 * np.cos(j[0]) + self.R2 * np.cos(j[1])
+        y = self.R1 * np.sin(j[0]) + self.R2 * np.sin(j[1])
         if (x-v[0])**2 + (y-v[1])**2 < 1e-5:
             return True
   
-
     def fromRotationToPosition(self, J1, J2, Z):
 
-        x = self.R1 * np.cos(J1) + self.R2 * np.cos(J2)
-        y = self.R1 * np.sin(J1) + self.R2 * np.sin(J2)
+        x = self.R1 * np.cos(J1) + self.R2 * np.cos(J2+J1)
+        y = self.R1 * np.sin(J1) + self.R2 * np.sin(J2+J1)
         z = Z
         return np.asarray([x, y, z])
     
@@ -84,19 +85,20 @@ class Robot:
         if index == -1:
             return False, 0, 0, 0
         else:
-            return True, pairs[index][0], pairs[index][1], z
+            return True, pairs[index][0], pairs[index][1]-pairs[index][0], z
 
 
     def fromGlobalToArmSystem(self, r, x):
 
         valid, J1, J2, z = self.fromPositionToRotation(r)
+        J = (J1 + J2)
         if not valid:
             return False, np.asarray([0, 0, 0])
         else:
-            delta = np.asarray([self.R1*np.cos(J1), self.R1*np.sin(J1), z])
+            delta = np.asarray([self.R1*np.cos(J1), self.R1*np.sin(J1), 0.0])
             v = x - delta
-            rot_ = [[np.cos(-J1), -np.sin(-J1), 0.0],
-                    [np.sin(-J1), np.cos(-J1), 0.0],
+            rot_ = [[np.cos(-J), -np.sin(-J), 0.0],
+                    [np.sin(-J), np.cos(-J), 0.0],
                     [0.0, 0.0, 1.0]]
             rot = np.asmatrix(rot_)
             newv = np.asarray(rot.dot(v))[0]
@@ -106,12 +108,13 @@ class Robot:
     def fromArmToGlobalSystem(self, r, x):
 
         valid, J1, J2, z = self.fromPositionToRotation(r)
+        J = (J1 + J2)
         if not valid:
             return False, np.asarray([0, 0, 0])
         else:
-            delta = np.asarray([self.R1*np.cos(J1), self.R1*np.sin(J1), z])
-            rot_ = [[np.cos(J1), -np.sin(J1), 0.0],
-                    [np.sin(J1), np.cos(J1), 0.0],
+            delta = np.asarray([self.R1*np.cos(J1), self.R1*np.sin(J1), 0.0])
+            rot_ = [[np.cos(J), -np.sin(J), 0.0],
+                    [np.sin(J), np.cos(J), 0.0],
                     [0.0, 0.0, 1.0]]
             rot = np.asmatrix(rot_)
             newv = np.asarray(rot.dot(x))[0]
@@ -173,32 +176,44 @@ class Robot:
         return True, newv
 
 
-def fromGlobalToCameraSystem(self, x, r):
+    def fromGlobalToCameraSystem(self, x, r):
 
-    valid, plocalarm = self.fromGlobalToArmSystem(x, r)
-    if not valid:
-        return False, np.asarray([0,0,0])
-    valid, pcamera = self.fromArmToCameraSystem(plocalarm)
-    if not valid:
-        return False, np.asarray([0,0,0])
-    return True, pcamera
-
-
-def takeMeasurements(self, points):
-    measurements = []
-    for p in points:
-        x = np.random.normal(p[0], self.sigmaRobot)[0]
-        y = np.random.normal(p[1], self.sigmaRobot)[0]
-        z = p[2]
-        measurements.append([x, y, z])
-    return measurements  
-
-def takeCameraMeasurements(self, points)
-    measurements = []
-    for p in points:
-        valid, ppoint = self.fromGlobalToCameraSystem(self, p, p)
+        valid, plocalarm = self.fromGlobalToArmSystem(x, r)
         if not valid:
-            print("Reference point out of range")
-            sys.exit()
-        measurements.append(ppoint)
-    return measurements
+            return False, np.asarray([0,0,0])
+        valid, pcamera = self.fromArmToCameraSystem(plocalarm)
+        if not valid:
+            return False, np.asarray([0,0,0])
+        return True, pcamera
+
+    def fromCameraToGlobalSystem(self, x, r):
+        valid, plocalarm = self.fromCameraToArmSystem(r)
+        if not valid:
+            return False, np.asarray([0,0,0])
+        valid, pglobal = self.fromArmToGlobalSystem(x, plocalarm)
+        if not valid:
+            return False, np.asarray([0,0,0])
+        return True, pglobal
+    
+    def takeMeasurements(self, points):
+        measurements = []
+        for p in points:
+            print(p)
+            x = np.random.normal(p[0], self.sigmaRobot)
+            y = np.random.normal(p[1], self.sigmaRobot)
+            z = p[2]
+            measurements.append(np.asarray([x, y, z]))
+        return measurements  
+
+    def takeCameraMeasurements(self, points):
+        measurements = []
+        for p in points:
+            valid, ppoint = self.fromGlobalToCameraSystem(p, p)
+            if not valid:
+                print("Reference point out of range")
+                sys.exit()
+            x = np.random.normal(ppoint[0], self.sigmaCamera)
+            y = np.random.normal(ppoint[1], self.sigmaCamera)
+            z = ppoint[2]
+            measurements.append(np.asarray([x, y, z]))
+        return measurements
