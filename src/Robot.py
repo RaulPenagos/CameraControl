@@ -200,7 +200,6 @@ class Robot:
     def takeMeasurements(self, points):
         measurements = []
         for p in points:
-            print(p)
             x = np.random.normal(p[0], self.sigmaRobot)
             y = np.random.normal(p[1], self.sigmaRobot)
             z = p[2]

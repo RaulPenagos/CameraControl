@@ -9,7 +9,7 @@ if __name__=='__main__':
 
 
     cameraCoordinates = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    robot = Robot(50.0, 50.0, cameraCoordinates, 0.0, 0.0)
+    robot = Robot(50.0, 50.0, cameraCoordinates, 0.05, 0.05)
     
     table = Table()
     table.generatePointsInSquare(30.0, 30.0, -20.0, 30.0)  
@@ -23,8 +23,8 @@ if __name__=='__main__':
     
     l = MyLikelihood(robotM, robotC, robot)
     result = l.fit(start_params=[5, 3])
-    print('a: ', result.params[0]) 
-    print('b: ', result.params[1]) 
+    #print('a: ', result.params[0]) 
+    #print('b: ', result.params[1]) 
 
 
     fig = plt.figure(figsize = plt.figaspect(0.5))
