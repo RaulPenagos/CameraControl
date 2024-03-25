@@ -186,6 +186,7 @@ class Robot:
             return False, np.asarray([0,0,0])
         return True, pcamera
 
+
     def fromCameraToGlobalSystem(self, x, r):
         valid, plocalarm = self.fromCameraToArmSystem(r)
         if not valid:
@@ -194,7 +195,8 @@ class Robot:
         if not valid:
             return False, np.asarray([0,0,0])
         return True, pglobal
-    
+
+
     def takeMeasurements(self, points):
         measurements = []
         for p in points:
@@ -205,10 +207,10 @@ class Robot:
             measurements.append(np.asarray([x, y, z]))
         return measurements  
 
-    def takeCameraMeasurements(self, points):
+    def takeCameraMeasurements(self, refPoints, robotPoints):
         measurements = []
-        for p in points:
-            valid, ppoint = self.fromGlobalToCameraSystem(p, p)
+        for i, p in enumerate(refPoints):
+            valid, ppoint = self.fromGlobalToCameraSystem(robotPoints[i], p)
             if not valid:
                 print("Reference point out of range")
                 sys.exit()

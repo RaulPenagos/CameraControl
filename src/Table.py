@@ -13,6 +13,13 @@ class Table:
     def toNumpy(self, p):
         return np.asmatrix(p)
     
+    def prepareForFit(self, r):
+
+        x = self.toNumpy(r)
+        y = x.flatten()
+        y = np.asarray(y)
+        return y[0,:]
+    
     def generatePointsInSquare(self, x0, y0, z0, L):
 
         x1 = x0 

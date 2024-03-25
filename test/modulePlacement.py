@@ -3,18 +3,29 @@ import sys
 import matplotlib.pyplot as plt
 from src.Robot import Robot
 from src.Table import Table
+from src.Likelihood import MyLikelihood
 
 if __name__=='__main__':
 
 
     cameraCoordinates = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    robot = Robot(50.0, 50.0, cameraCoordinates, 0.1, 0.1)
+    robot = Robot(50.0, 50.0, cameraCoordinates, 0.0, 0.0)
     
     table = Table()
     table.generatePointsInSquare(30.0, 30.0, -20.0, 30.0)  
    
     robotMeasurements = robot.takeMeasurements(table.points)
-    cameraMeasurements = robot.takeCameraMeasurements(table.points)
+    cameraMeasurements = robot.takeCameraMeasurements(table.points, robotMeasurements)
+    
+    robotM = table.prepareForFit(robotMeasurements)
+    robotC = table.prepareForFit(cameraMeasurements)
+    
+    
+    l = MyLikelihood(robotM, robotC, robot)
+    result = l.fit(start_params=[5, 3])
+    print('a: ', result.params[0]) 
+    print('b: ', result.params[1]) 
+
 
     fig = plt.figure(figsize = plt.figaspect(0.5))
     ax1 = fig.add_subplot(1, 2, 1)
@@ -23,6 +34,8 @@ if __name__=='__main__':
     thePoints = table.toNumpy(table.points)
     theRobotMeasurements = table.toNumpy(robotMeasurements)
     theCameraMeasurements = table.toNumpy(cameraMeasurements)
+    
+
 
     xReal = thePoints[:,0]
     yReal = thePoints[:,1]
