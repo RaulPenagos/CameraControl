@@ -24,10 +24,10 @@ def runTestCameraPosition(table, robot):
     return result.params[0], result.params[1], cov[0][0], cov[1][1]
  
 
-def runTestPositionDetermination(table1, table2, newrobot):
+def runTestPositionDetermination(table1, table2, robot, newrobot):
 
-    robotMeasurements = newrobot.takeMeasurements(table1.points)
-    cameraMeasurements = newrobot.takeCameraMeasurements(table2.points, robotMeasurements)
+    robotMeasurements = robot.takeMeasurements(table1.points)
+    cameraMeasurements = robot.takeCameraMeasurements(table2.points, robotMeasurements)
     
     d2 = 0.0
     print('len')
@@ -76,7 +76,7 @@ if __name__=='__main__':
             sigmaY[i][j] = np.sqrt(sigmay)
             newCameraCoordinates = [deltax, deltay, 0.0, 0.0, 0.0, 0.0]
             newrobot = Robot(50.0, 50.0, newCameraCoordinates, sigmaR, sigmaC)
-            d = runTestPositionDetermination(table3, table2, newrobot)
+            d = runTestPositionDetermination(table3, table2, robot, newrobot)
             print(d)
             sigmaD[i][j] = d
 
@@ -108,7 +108,7 @@ if __name__=='__main__':
     fig.colorbar(c3, ax=ax3)
     
     plt.tight_layout()
-    plt.show()
+    plt.savefig('colormaps.png')
 
 
 
