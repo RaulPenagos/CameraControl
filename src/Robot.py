@@ -1,19 +1,33 @@
 import numpy as np
 import sys
 
+from src.Camera import Camera
+from src.EulerRotation import EulerRotation
+from src.Table import Table
 
 
 
 class Robot:
 
-    def __init__(self, R1, R2, camera, sigmaRobot, sigmaCamera):
+    def __init__(self, R1, R2, table, camera, sigmaRobot, sigmaCamera):
 
         self.R1 = R1
         self.R2 = R2
-        self.tol = 1e-5
+        self.tol = 1e-8
         self.sigmaRobot = sigmaRobot
         self.sigmaCamera = sigmaCamera
-        self.param = camera
+        self.camera = camera
+        self.table = table
+        self.realTable = self.makeRealTable()    
+
+    # This produces a real table according to the tolerances
+    def makeRealTable(self):
+
+        table = Table()
+        for point in self.table.points:
+            dx = np.random.normal(p[0], self.sigmaRobot)
+            dy = np.random.normal(p[1], self.sigmaRobot)
+            table.addReferencePoint(point[0] + dx, point[1] + dy, point[2])
 
     #Auxiliary function
     def angleFromSineCosine(self, s, c):
@@ -37,7 +51,6 @@ class Robot:
         z = Z
         return np.asarray([x, y, z])
     
-
     def fromPositionToRotation(self, v):
 
         x = v[0]
@@ -104,7 +117,6 @@ class Robot:
             newv = np.asarray(rot.dot(v))[0]
             return True, newv
 
-
     def fromArmToGlobalSystem(self, r, x):
 
         valid, J1, J2, z = self.fromPositionToRotation(r)
@@ -121,60 +133,20 @@ class Robot:
             newx = newv + delta
             return True, newx
 
-
     def fromArmToCameraSystem(self, x):
 
-        delta = np.asarray([self.param[0], self.param[1], self.param[2]])
-        v = x - delta
-        phix = self.param[3]
-        phiy = self.param[4]
-        phiz = self.param[5]
-        #RotX
-        matxnom_ = [[1.0, 0, 0],
-                    [0.0, np.cos(-phix), -np.sin(-phix)],
-                    [0.0, np.sin(-phix), np.cos(-phix)]]
-        matxnom = np.asmatrix(matxnom_)
-        #RotY
-        matynom_ = [[np.cos(-phiy), 0.0, -np.sin(-phiy)],
-                    [0.0, 1.0, 0.0],
-                    [np.sin(-phiy), 0.0, np.cos(-phiy)]]
-        matynom = np.asmatrix(matynom_)
-        #RotZ
-        matznom_ = [[np.cos(-phiz), -np.sin(-phiz), 0.0],
-                    [np.sin(-phiz), np.cos(-phiz), 0.0],
-                    [0.0, 0.0, 1.0]]
-        matznom = np.asmatrix(matznom_)
-        rotnom = matxnom.dot(matynom.dot(matznom))
+        v = x - self.camera.r
+        rotnom = self.camera.rotation.rot
         newv = np.asarray(rotnom.dot(v))[0]
         return True, newv
 
-
     def fromCameraToArmSystem(self, x):
 
-        delta = np.asarray([self.param[0], self.param[1], self.param[2]])
-        phix = self.param[3]
-        phiy = self.param[4]
-        phiz = self.param[5]
-        #RotX
-        matxnom_ = [[1.0, 0, 0],
-                    [0.0, np.cos(phix), -np.sin(phix)],
-                    [0.0, np.sin(phix), np.cos(phix)]]
-        matxnom = np.asmatrix(matxnom_)
-        #RotY
-        matynom_ = [[np.cos(phiy), 0.0, -np.sin(phiy)],
-                    [0.0, 1.0, 0.0],
-                    [np.sin(phiy), 0.0, np.cos(phiy)]]
-        matynom = np.asmatrix(matynom_)
-        #RotZ
-        matznom_ = [[np.cos(phiz), -np.sin(phiz), 0.0],
-                    [np.sin(phiz), np.cos(phiz), 0.0],
-                    [0.0, 0.0, 1.0]]
-        matznom = np.asmatrix(matznom_)
-        rotnom = matxnom.dot(matynom.dot(matznom))
+        delta = self.camera.r 
+        rotnom = self.camera.rotation.rot
         v = np.asarray(rotnom.dot(x))[0]
         newv = v + delta
         return True, newv
-
 
     def fromGlobalToCameraSystem(self, x, r):
 
@@ -186,8 +158,8 @@ class Robot:
             return False, np.asarray([0,0,0])
         return True, pcamera
 
-
     def fromCameraToGlobalSystem(self, x, r):
+        
         valid, plocalarm = self.fromCameraToArmSystem(r)
         if not valid:
             return False, np.asarray([0,0,0])
@@ -196,15 +168,6 @@ class Robot:
             return False, np.asarray([0,0,0])
         return True, pglobal
 
-
-    def takeMeasurements(self, points):
-        measurements = []
-        for p in points:
-            x = np.random.normal(p[0], self.sigmaRobot)
-            y = np.random.normal(p[1], self.sigmaRobot)
-            z = p[2]
-            measurements.append(np.asarray([x, y, z]))
-        return measurements  
 
     def takeCameraMeasurements(self, refPoints, robotPoints):
         measurements = []

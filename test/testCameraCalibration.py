@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.Robot import Robot
 from src.Table import Table
 from src.Likelihood import MyLikelihood
-
+from src.Camera import Camera
 
 
 
@@ -41,13 +41,18 @@ def runTestPositionDetermination(table1, table2, robot, newrobot):
             
 if __name__=='__main__':
     
+    # R1 and R2 of the robot
+    R1 = 30.0
+    R2 = 30.0
+
+    # Generate the table
     table = Table()
-    table.generatePointsInSquare(30.0, 30.0, -20.0, 30.0)  
+    table.generatePoints()
+      
+    # Generate the camera  
+    camera = Camera(2.0, 0.0, 3.0, 0.0, 0.0, 0.0)
 
-    table2 = Table()
-    table2.addReferencePoint(25.0, 15.0, 0.0)
-
-    cameraCoordinates = [2.0, 0.0, 3.0, 0.0, 0.0, 0.0]
+    # Grid and binning 
     sigmaRobot = np.arange(0.01, 0.1, 0.005)
     sigmaCamera = np.arange(0.01, 0.1, 0.005)
     n = len(sigmaRobot)
@@ -60,7 +65,8 @@ if __name__=='__main__':
         for j in range(0, n):
             sigmaR = sigmaRobot[i][j]
             sigmaC = sigmaCamera[i][j]
-            robot = Robot(50.0, 50.0, cameraCoordinates, sigmaR, sigmaC)
+            robot = Robot(R1, R2, table, camera, sigmaR, sigmaC)
+
             
             deltax, deltay, sigmax, sigmay = runTestCameraPosition(table, robot)
             sigmaX[i][j] = np.sqrt(sigmax)
