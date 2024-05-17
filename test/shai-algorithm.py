@@ -12,7 +12,7 @@ def shi_tomasi(image):
     #Specifying maximum number of corners as 1000
     # 0.01 is the minimum quality level below which the corners are rejected
     # 10 is the minimum euclidean distance between two corners
-    corners_img = cv2.goodFeaturesToTrack(gray_img,1000,0.01,5)
+    corners_img = cv2.goodFeaturesToTrack(gray_img,4000,0.03,0.1)
     
     corners_img = np.int0(corners_img)
 
@@ -28,6 +28,6 @@ if __name__=='__main__':
 
     #camera = cv2.VideoCapture(0)
     #return_value, image = camera.read()
-    image = cv2.imread('caca.jpeg') 
+    image = cv2.imread('module.jpeg') 
     corners_image = shi_tomasi(image)
     cv2.imwrite('picture.png', image)  

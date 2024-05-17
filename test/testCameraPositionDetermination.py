@@ -45,19 +45,9 @@ if __name__=='__main__':
     table.generatePointsInSquare(30.0, 30.0, -20.0, 30.0)  
 
     table2 = Table()
-    table2.generatePointsInSquare(32.0, 32.0, -20.0, 26.0)
-    table2.generatePointsInSquare(31.0, 31.0, -20.0, 26.0)
-    table2.generatePointsInSquare(33.0, 33.0, -20.0, 26.0)
-    table2.generatePointsInSquare(34.0, 34.0, -20.0, 26.0)
+    table2.addReferencePoint(25.0, 15.0, 0.0)
 
-    table3 = Table()
-    table3.generatePointsInSquare(30.0, 30.0, -20.0, 30.0) 
-    table3.generatePointsInSquare(30.0, 30.0, -20.0, 30.0) 
-    table3.generatePointsInSquare(30.0, 30.0, -20.0, 30.0) 
-    table3.generatePointsInSquare(30.0, 30.0, -20.0, 30.0) 
-
-
-    cameraCoordinates = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    cameraCoordinates = [2.0, 0.0, 3.0, 0.0, 0.0, 0.0]
     sigmaRobot = np.arange(0.01, 0.1, 0.005)
     sigmaCamera = np.arange(0.01, 0.1, 0.005)
     n = len(sigmaRobot)
