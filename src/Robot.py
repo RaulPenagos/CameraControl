@@ -9,28 +9,25 @@ from src.Table import Table
 
 class Robot:
 
-    def __init__(self, R1, R2, table, camera, sigmaRobot, sigmaCamera):
+    def __init__(self, R1, R2, table, camera):
 
         self.R1 = R1
         self.R2 = R2
         self.tol = 1e-8
-        self.sigmaRobot = sigmaRobot
-        self.sigmaCamera = sigmaCamera
         self.camera = camera
         self.table = table
-        self.realTable = self.makeRealTable()    
+        self.r = np.asarray([100.0, 0.0, 0.0])
+        self.Jz = 0.0  
+  
+    def setPosition(self, r, Jz):
 
-    # This produces a real table according to the tolerances
-    def makeRealTable(self):
-
-        table = Table()
-        for point in self.table.points:
-            dx = np.random.normal(p[0], self.sigmaRobot)
-            dy = np.random.normal(p[1], self.sigmaRobot)
-            table.addReferencePoint(point[0] + dx, point[1] + dy, point[2])
+        self.r = r
+        self.Jz = Jz
+        self.camera.rotate(Jz)
 
     #Auxiliary function
     def angleFromSineCosine(self, s, c):
+
         if s >= 0:
             return np.arccos(c)
         else:
@@ -43,15 +40,15 @@ class Robot:
         y = self.R1 * np.sin(j[0]) + self.R2 * np.sin(j[1])
         if (x-v[0])**2 + (y-v[1])**2 < 1e-5:
             return True
-  
-    def fromRotationToPosition(self, J1, J2, Z):
+
+    def fromRotationCoordinatesToPositionCoordinates(self, J1, J2, Z):
 
         x = self.R1 * np.cos(J1) + self.R2 * np.cos(J2+J1)
         y = self.R1 * np.sin(J1) + self.R2 * np.sin(J2+J1)
         z = Z
         return np.asarray([x, y, z])
     
-    def fromPositionToRotation(self, v):
+    def fromPositionCoordinatesToRotationCoordinates(self, v):
 
         x = v[0]
         y = v[1]
@@ -100,10 +97,11 @@ class Robot:
         else:
             return True, pairs[index][0], pairs[index][1]-pairs[index][0], z
 
+    # This gives the position of x in the system of reference of the robot arm
+    # when the robot is at position r
+    def fromGlobalToArmSystem(self, x):
 
-    def fromGlobalToArmSystem(self, r, x):
-
-        valid, J1, J2, z = self.fromPositionToRotation(r)
+        valid, J1, J2, z = self.fromPositionToRotation(self.r)
         J = (J1 + J2)
         if not valid:
             return False, np.asarray([0, 0, 0])
@@ -117,9 +115,12 @@ class Robot:
             newv = np.asarray(rot.dot(v))[0]
             return True, newv
 
-    def fromArmToGlobalSystem(self, r, x):
+    
+    # This gives the position of x in the global system of reference 
+    # when the robot is the current position
+    def fromArmToGlobalSystem(self, x):
 
-        valid, J1, J2, z = self.fromPositionToRotation(r)
+        valid, J1, J2, z = self.fromPositionToRotation(self.r)
         J = (J1 + J2)
         if not valid:
             return False, np.asarray([0, 0, 0])
@@ -133,6 +134,8 @@ class Robot:
             newx = newv + delta
             return True, newx
 
+
+    #This gives the vector x given in the arm system into the camera system
     def fromArmToCameraSystem(self, x):
 
         v = x - self.camera.r
@@ -140,6 +143,7 @@ class Robot:
         newv = np.asarray(rotnom.dot(v))[0]
         return True, newv
 
+    #This does just the opposite
     def fromCameraToArmSystem(self, x):
 
         delta = self.camera.r 
@@ -148,9 +152,10 @@ class Robot:
         newv = v + delta
         return True, newv
 
-    def fromGlobalToCameraSystem(self, x, r):
 
-        valid, plocalarm = self.fromGlobalToArmSystem(x, r)
+    def fromGlobalToCameraSystem(self, x):
+
+        valid, plocalarm = self.fromGlobalToArmSystem(x)
         if not valid:
             return False, np.asarray([0,0,0])
         valid, pcamera = self.fromArmToCameraSystem(plocalarm)
