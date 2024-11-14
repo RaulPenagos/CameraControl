@@ -25,7 +25,7 @@ if __name__ == "__main__":
     ax2.set_xlabel('x [cm]')
     ax2.set_ylabel('y [cm]')
     
-    table = Table()
+    table = Table(0.01, 0.0)
     table.generatePoints()
     table.plotTable(ax1, ax2, 'g.')
     plt.show()

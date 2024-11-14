@@ -13,10 +13,11 @@ class Table:
         self.pUL = np.asarray([-38.0, 36.0, self.z])
         self.pLR = np.asarray([61.0, -65.0, self.z])
         self.pUR = np.asarray([61.0, 36.0, self.z])
+        self.generatePoints()
         self.makeActualTable()
         
     def addReferencePoint(self, x, y, z):
-
+        
         self.points.append(np.asarray([x,y,z]))
 
     def addActualReferencePoint(self, x, y, z):
@@ -77,9 +78,9 @@ class Table:
     # This produces the actual positions according to the tolerances
     def makeActualTable(self):
   
-        for point in self.table.points:
-            dx = np.random.normal(p[0], self.tolerance)
-            dy = np.random.normal(p[1], self.tolerance)
+        for point in self.points:
+            dx = np.random.normal(0.0, self.tolerance)
+            dy = np.random.normal(0.0, self.tolerance)
             self.addActualReferencePoint(point[0] + dx, point[1] + dy, point[2])
 
 
