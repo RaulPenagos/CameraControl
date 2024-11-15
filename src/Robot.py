@@ -119,7 +119,7 @@ class Robot:
             k = i - b - 1
             j1 = self.J1e
             j2 = self.J2e
-            z = self.Zs + k * (Ze - Zs) / (self.N - 1 - b - 1)
+            z = self.Zs + k * (self.Ze - self.Zs) / (self.N - 1 - b - 1)
             self.innerMoveTo(j1, j2, z, 0.0)
             self.drawRobot(self.ax1, self.ax2, self.ax3, 'y')
 
@@ -133,7 +133,8 @@ class Robot:
         self.J2e = j2
         self.Ze = z
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=self.N, interval=1, blit=True)
+        return ani
 
 
     ######### Move the robot ###########################################
@@ -258,6 +259,16 @@ class Robot:
     # Drawing the robot
     def drawRobot(self, ax1, ax2, ax3, t, alpha=1.0):
     
+        ax1.clear()
+        ax2.clear()
+        ax3.clear()
+        ax1.axes.set_xlim3d(left=-70, right=70.0) 
+        ax1.axes.set_ylim3d(bottom=-70, top=70.0)   
+        ax2.axes.set_xlim((-40.0, 70.0))
+        ax2.axes.set_ylim((-70.0, 40.0))
+        ax3.axes.set_xlim((-1.0, 1.0))
+        ax3.axes.set_ylim((-1.0, 1.0))
+        self.table.plotTable(ax1, ax2, 'g.')
         p1 = [0, 0, 0]
         p2 = [0, 0, self.h]
         p3 = [self.R1 * np.cos(self.J1), self.R1 * np.sin(self.J1), self.h]
