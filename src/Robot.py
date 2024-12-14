@@ -7,7 +7,7 @@ from src.EulerRotation import EulerRotation
 from src.Table import Table
 
 ####################################################################
-# Some definitions                                                 #
+# Some definitions                                                   #
 # The robot pointer has two systems of coordinates:                #
 # Cartesian: (x, y, z) and JZ = position of the pointer and JZ     #
 # Inner: (J1, J2, Z) and JZ = rotations of the axis                #
@@ -142,6 +142,8 @@ class Robot:
         self.r = v
         self.Jz = jz
         status, j1, j2, Z = self.fromCartesianToInner(v)
+        # print(v, jz) # test
+        # print(status, j1, j2, Z)  # test
         if status:
             self.J1 = j1
             self.J2 = j2
@@ -186,12 +188,15 @@ class Robot:
         y = v[1]
         z = v[2]
         Z = self.Z0 - z
+
+        # Condicion para que el punto sea alzanzable?
         Delta = (x**2 + y**2 + self.R1**2 - self.R2**2)/(2.0*self.R1)
         a = (x**2 + y**2)
         b = -2.0 * Delta * x
         c = Delta**2 - y**2
-        if b**2-4.0*a*c < 0.0:
-            return False, 0, 0, 0
+        if b**2-4.0*a*c < 0.0:   # Discriminante menor que cero
+            # print('Discriminante < 0')
+            return False, 0, 0, 0  
     
         cosj1_p = (-b + np.sqrt(b**2-4.0*a*c))/(2.0*a)
         cosj2_p = (x - self.R1 * cosj1_p) / self.R2
@@ -232,16 +237,45 @@ class Robot:
 
     #Projection of a point into the camera
     def point3DToCameraProjection(self, r):
+        """
+        Proyecta un punto 3D de la mesa en el CCD de la cámara, nos dice en que x,y 
+        del detector quedaría ese punto real
+        """
 
+        # Posición cámara respecto al punto
         s = self.camera.r0global - r
+        # print('s: ', s)
+
+        #  dist_focal/proyeccion s en eje z
         l = self.camera.focaldistance / (s[0]*self.camera.uzglobal[0] + s[1]*self.camera.uzglobal[1] + s[2]*self.camera.uzglobal[2])
+        # print('l: ', l)
+        # 
         p = self.camera.r0global + l * (self.camera.r0global - r)
+        # print('p: ', p)
+        #  Centro del plano focal
         center = self.camera.r0global + self.camera.focaldistance * self.camera.uzglobal
+        # print('center: ', center)
+
+        #  Se da el punto repecto a las  coordenadas del centro del plano focal
         p = p - center
 
+        # TESTING
+        
+        print('ux:', self.camera.uxglobal[0], self.camera.uxglobal[1], self.camera.uxglobal[2])
+        print('uy:', self.camera.uyglobal[0], self.camera.uyglobal[1], self.camera.uyglobal[2])
+        print('p respecto center: ', p)
+        print('aumento lateral: ', self.camera.cx, self.camera.cy)
+        print(p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
+        print(p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])
+        
+
+        #  Aplico aumento lateral al punto, ¿Porque en las tres u_xyz?
         x = self.camera.cx * (p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
         y = self.camera.cy * (p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])
+        # print(f'point: {x:.2f}, {y:.2f}, {p} \n')
         return x, y
+    
+
     
     #3D reconstruction point from camera
     def cameraProjectionToPoint3D(self, p):
