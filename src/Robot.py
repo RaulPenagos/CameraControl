@@ -259,16 +259,14 @@ class Robot:
         #  Se da el punto repecto a las  coordenadas del centro del plano focal
         p = p - center
 
-        # TESTING
+        # TESTING        
+        # print('ux:', self.camera.uxglobal[0], self.camera.uxglobal[1], self.camera.uxglobal[2])
+        # print('uy:', self.camera.uyglobal[0], self.camera.uyglobal[1], self.camera.uyglobal[2])
+        # print('p respecto center: ', p)
+        # print('aumento lateral: ', self.camera.cx, self.camera.cy)
+        # print(p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
+        # print(p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])
         
-        print('ux:', self.camera.uxglobal[0], self.camera.uxglobal[1], self.camera.uxglobal[2])
-        print('uy:', self.camera.uyglobal[0], self.camera.uyglobal[1], self.camera.uyglobal[2])
-        print('p respecto center: ', p)
-        print('aumento lateral: ', self.camera.cx, self.camera.cy)
-        print(p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
-        print(p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])
-        
-
         #  Aplico aumento lateral al punto, ¿Porque en las tres u_xyz?
         x = self.camera.cx * (p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
         y = self.camera.cy * (p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])

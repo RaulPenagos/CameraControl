@@ -6,8 +6,7 @@ import sys
 from src.Table import Table
 from src.Camera import Camera
 from src.Robot import Robot
-
-
+from src.Likelihood import *
 
 
 
@@ -47,27 +46,18 @@ if __name__ == "__main__":
     robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
 
 
-
-    # #  test
-    # status, j1, j2, Z = robot.fromCartesianToInner([12,-49,0]) # con 20,20,0 va bien
-    # print(status, j1, j2, Z )
-
-
     def reachable_points(robot: Robot, save_fig: bool):
         """
         Plots the reachable and un-reachable points on the board 
         for a given robot
         """
-
-        puntos_no_accesibles_x = np.array([])
-        puntos_no_accesibles_y = np.array([])
-        puntos_accesibles_x = np.array([])
-        puntos_accesibles_y = np.array([])
+        puntos_no_accesibles_x, puntos_no_accesibles_y  = np.array([]), np.array([])
+        puntos_accesibles_x, puntos_accesibles_y  = np.array([]), np.array([])
 
         for n, point in enumerate(table.actualPoints):
 
-            # print(point)
-            if robot.fromCartesianToInner(point)[0] != False:  # quito los puntos donde el discriminate es < 0 
+            # quito los puntos donde el discriminate es < 0 
+            if robot.fromCartesianToInner(point)[0] != False:  
 
                 puntos_accesibles_x = np.append(puntos_accesibles_x, point[0])
                 puntos_accesibles_y = np.append(puntos_accesibles_y, point[1])
@@ -81,10 +71,9 @@ if __name__ == "__main__":
                                                   
                 # Puntos que no están al alcance del robot
                 # if np.sqrt(np.sum([i**2 for i in point])):
-                #     print('braci corto: ' np.sqrt(np.sum([i**2 for i in point])))
-                    
+                #     print('braci corto: ' np.sqrt(np.sum([i**2 for i in point])))               
 
-        #  Plot puntos aceesibles/innacesibles por el brazo del robot
+        # Plot puntos accesibles/innacesibles por el brazo del robot
         # Todos los puntos innacesibles están más lejos de los 60 cm de alcance del brazo
         fig = plt.figure(figsize = (8, 8))
         plt.plot(puntos_no_accesibles_x, puntos_no_accesibles_y, 'or',  label = 'unreachable')
@@ -96,70 +85,68 @@ if __name__ == "__main__":
             plt.savefig('puntos.png')
         plt.show()
 
-    # reachable_points(robot, save_fig = True)
+
+    def make_measurements(robot: Robot, print: bool):
+        """
+        Simula la toma de medidas de la posición de los puntos de la mesa.
+        Programa que coge todos los puntos definidos en la mesa, mueve el robot a cad uno
+        los ve con la cámara y toma una foto (obtiene las coordenadas xy en el CCD) 
+        Imprime por pantalla:
+            La configuración del robot: J1 y J2
+            Medidas de la cámara: X, Y 
+            Posición real (por construcción en la mesa) de ese punto: x, y
+        """
+        if print:
+
+            print(f'Robot_config(J1,J2) \t||\t camera_meas(X,Y) \t||\t real_pos(x,y)')
+            print(f' J1 \t \t J2 \t \t  X \t \t Y \t \t  x \t \t y \t \t z')
+
+        point_list = np.asarray([])  # save the configuration of the point in the camera and robot for every point
+        real_point_list = np.asarray([])  # save the real position x,y,z of every point
+
+        for n, point in enumerate(robot.table.actualPoints):
+
+            # Para los puntos accesibles (discriminate es >= 0)
+            if robot.fromCartesianToInner(point)[0] != False:   
+                    
+                # # A) Move the robot to the point 
+                # robot.cartesianMoveTo(point, 0) # 0: no modifico orientación émbolo 
+
+                # B) Move the robot close to the point 
+                close_to_point = np.asarray([round(i+np.random.uniform(0,2)) for i in point])
+                robot.cartesianMoveTo(close_to_point, 0) # 0: no modifico orientación émbolo 
+
+                # Get the robot's parameters
+                robot_config = np.asarray([robot.J1, robot.J2])
+
+                # Take picture: point's position in camera CCD
+                camera_meas = robot.point3DToCameraProjection(point)[0:2]
+
+                # The real position
+                real_pos = table.points[n]
+
+                point_list = np.append(point_list, camera_meas)
+                point_list = np.append(point_list, robot_config)
+                real_point_list = np.append(real_point_list, real_pos)
+
+                if print:
+
+                    robot_config_str = '\t'.join([str(i) for i in robot_config])
+                    camera_meas_str = '\t'.join([str(i) for i in camera_meas])
+                    real_pos_str = '\t'.join([str(i) for i in real_pos])
+
+                    # print(f'{robot_config} \t {camera_meas} \t {real_pos}')
+                    print(f'{robot_config_str} \t {camera_meas_str} \t {real_pos_str}')
+
+        # To be used as endog, exog
+        # point list: [x1, y1, J11, J21, x2, y2, J21, J22, ....]
+        return (point_list, real_point_list)
+    
+
+    make_measurements(robot)
 
 
 
-    """
-    1.- Hacer un programa que coja todos los puntos definidos en Table.py
-    y que le diga al robot que vaya a esos puntos para verlos con la cámara
-    y entonces tienes que imprimir por pantalla
-    La configuración del robot: J1 y J2, las medidas X, Y de la cámara y también la posición real (medida) de ese punto (sacada de Table.py)
-    """
 
-
-
-    # print(f'Robot_config(J1,J2) \t||\t camera_meas(X,Y) \t||\t real_pos(x,y)')
-    # print(f' J1 \t \t J2 \t \t  X \t \t Y \t \t  x \t \t y')
-
-    # for n, point in enumerate(table.actualPoints):
-
-    #     # quito los puntos donde el discriminate es < 0
-    #     if robot.fromCartesianToInner(point)[0] != False:   
-                 
-    #         # Move the robot to the point 
-    #         robot.cartesianMoveTo(point, 0) # 0: no modifico orientación émbolo 
-
-    #         # Get the robot's parameters
-    #         robot_config = np.asarray([robot.J1, robot.J2])
-
-    #         # Point's position in camera CCD
-    #         # camera_meas = np.asarray(robot.fromInnerToCartesian()+ robot.camera.r0)[0:2]
-    #         camera_meas = robot.point3DToCameraProjection(point)[0:2]
-
-    #         # Problemas con point3DToCameraProjection()?
-
-    #         # The real position (measured in the lab by us)
-    #         real_pos = table.points[n]
-
-    #         robot_config_str = '\t'.join([str(i) for i in robot_config])
-    #         camera_meas_str = '\t'.join([str(i) for i in camera_meas])
-    #         real_pos_str = '\t'.join([str(i) for i in real_pos])
-
-    #         # print(f'{robot_config} \t {camera_meas} \t {real_pos}')
-    #         print(f'{robot_config_str} \t {camera_meas_str} \t {real_pos_str}')
-    #     else:
-    #         pass
-
-
-    # Testing point3DToCameraProjection
-
-    # point = np.array([25, 25, 0])
-
-    # robot.cartesianMoveTo(point, 0)
-    # print(robot.point3DToCameraProjection(point)[0:2])
-
-
-
-    # Second testing
-
-    for n, point in enumerate(table.actualPoints):
-
-        if robot.fromCartesianToInner(point)[0] != False:   
-
-            robot.cartesianMoveTo(point, 0)
-            # print(robot.ux, robot.uy, robot.uz)
-            print('J:', robot.J1, robot.J2)
-            print(robot.point3DToCameraProjection(point)[0:2])
 
     
