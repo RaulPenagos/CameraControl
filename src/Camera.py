@@ -2,13 +2,14 @@ import numpy as np
 from src.EulerRotation import EulerRotation
 
 class Camera:
+    #  NO tiene posición?
 
     def __init__(self, x, y, z, psi, theta, phi, cx, cy, focaldistance, sigmaCamera):
 
         self.r0 = np.asarray([x, y, z])
         self.rotation0 = EulerRotation(psi, theta, phi)
         self.sigmaCamera = sigmaCamera
-        self.cx = cx
+        self.cx = cx # Lateral zoom
         self.cy = cy
         self.focaldistance = focaldistance
         self.r0global = np.asarray([0.0, 0.0, 0.0])

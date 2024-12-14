@@ -7,8 +7,8 @@ class Table:
 
         self.tolerance = tolerance
         self.z = z
-        self.points = []
-        self.actualPoints = []
+        self.points = [] # la posicion que yo conozco, con un cierto error
+        self.actualPoints = [] # posicion del punto real, la que ve la camara
         self.pLL = np.asarray([-38.0, -65.0, self.z])
         self.pUL = np.asarray([-38.0, 36.0, self.z])
         self.pLR = np.asarray([61.0, -65.0, self.z])
