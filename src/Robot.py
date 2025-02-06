@@ -133,7 +133,7 @@ class Robot:
         self.J2e = j2
         self.Ze = z
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function, frames=self.N, interval=1, blit=True)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=self.N, interval=1, blit=False)
         return ani
 
 
@@ -151,8 +151,8 @@ class Robot:
             self.uz = np.asarray([0.0, 0.0, 1.0])
             self.updateCameraGlobals()
         else:
-            print('There was an error moving the robot')
-            sys.exit()     
+            print(f'There was an error moving the robot, point: [{v}]')
+            # sys.exit()     
 
     ######## Auxiliary function##########################################
     def angleFromSineCosine(self, s, c):
@@ -167,7 +167,7 @@ class Robot:
 
         x = self.R1 * np.cos(j[0]) + self.R2 * np.cos(j[1])
         y = self.R1 * np.sin(j[0]) + self.R2 * np.sin(j[1])
-        if (x-v[0])**2 + (y-v[1])**2 < 1e-5:
+        if (x-v[0])**2 + (y-v[1])**2 < 1e-3:
             return True
         return False
     
@@ -219,12 +219,10 @@ class Robot:
         pairs = [[J1pp, J2pp], [J1pm, J2pm], [J1mp, J2mp], [J1mm, J2mm]]
 
         index = -1
-        j1 = 1000.0
         for i, j in enumerate(pairs):
             if self.checkValidConversion(v, j):
-                if j[0] >= 0 and j[0] < j1:
+                if j[0] <= j[1]-j[0]:
                     index = i
-                    j1 = j[0]
         if index == -1:
             return False, 0, 0, 0
         else:
@@ -232,15 +230,25 @@ class Robot:
 
     #Projection of a point into the camera
     def point3DToCameraProjection(self, r):
-
+        """
+        Proyecta un punto 3D de la mesa en el CCD de la cámara, nos dice en que x,y 
+        del detector quedaría ese punto real
+        """
+        # Posición cámara respecto al punto
         s = self.camera.r0global - r
+
+        #  dist_focal/proyeccion s en eje z
         l = self.camera.focaldistance / (s[0]*self.camera.uzglobal[0] + s[1]*self.camera.uzglobal[1] + s[2]*self.camera.uzglobal[2])
         p = self.camera.r0global + l * (self.camera.r0global - r)
+        #  Centro del plano focal
         center = self.camera.r0global + self.camera.focaldistance * self.camera.uzglobal
+
+        #  Se da el punto repecto a las  coordenadas del centro del plano focal
         p = p - center
 
         x = self.camera.cx * (p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
         y = self.camera.cy * (p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])
+
         return x, y
     
     #3D reconstruction point from camera
@@ -255,6 +263,47 @@ class Robot:
         l = (self.table.z-self.camera.r0global[2])/s[2]
         point3D = self.camera.r0global + l * s
         return point3D
+    
+    def cameraPointing(self): 
+        # Returns intersection between camera z pointing and table
+        # Sabaer a que punto apunta la camara
+        z_table = self.table.z
+        camera_r = self.camera.r0global  # + self.fromInnerToCartesian(self.J1, self.J2, self.Z)
+        pointing = self.camera.uzglobal
+
+        t = (z_table - camera_r[2])/pointing[2]
+
+        x = camera_r[0] + t*pointing[0]
+        y = camera_r[1] + t*pointing[1]
+
+        return [x,y]
+
+    def cameraAim(self, point):
+        # Apuntar  a un punto con la camara
+        x = point[0]
+        y = point[1]
+
+        z_table = self.table.z
+        pointing = self.camera.uzglobal 
+
+        camera_r = np.asarray([0, 0, 0]) # posicion absoluta
+
+        t = (z_table - self.camera.r0global[2])/pointing[2]
+
+        camera_r[0] = x - t *pointing[0]
+        camera_r[1] = y - t *pointing[1]
+        camera_r[2] = self.camera.r0global[2]
+
+        # Posicion a la que mover el robot:
+        r_objective_robot = camera_r + self.camera.r0
+        r_objective_robot_table = np.append( r_objective_robot[0:2], [0])
+
+        self.cartesianMoveTo(r_objective_robot_table, 0)
+
+
+
+
+
 
     # Drawing the robot
     def drawRobot(self, ax1, ax2, ax3, t, alpha=1.0):

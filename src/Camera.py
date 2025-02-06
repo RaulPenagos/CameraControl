@@ -5,13 +5,13 @@ class Camera:
 
     def __init__(self, x, y, z, psi, theta, phi, cx, cy, focaldistance, sigmaCamera):
 
-        self.r0 = np.asarray([x, y, z])
+        self.r0 = np.asarray([x, y, z])  # posicion relativa al robot  
         self.rotation0 = EulerRotation(psi, theta, phi)
         self.sigmaCamera = sigmaCamera
         self.cx = cx
         self.cy = cy
         self.focaldistance = focaldistance
-        self.r0global = np.asarray([0.0, 0.0, 0.0])
+        self.r0global = np.asarray([0.0, 0.0, 0.0]) # posicion absoluta
         self.uxglobal = np.asarray([1.0, 0.0, 0.0])
         self.uyglobal = np.asarray([0.0, 1.0, 0.0])
         self.uzglobal = np.asarray([0.0, 0.0, 1.0])
