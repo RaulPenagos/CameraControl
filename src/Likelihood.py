@@ -80,7 +80,7 @@ class MyLikelihood(GenericLikelihoodModel):
 
 
 
-   def fit(self, start_params=None, method='basinhopping', maxiter=5, **kwargs):
+   def fit(self, start_params=None, method='bfgs', maxiter=10000, **kwargs):
       # method = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
 
       if start_params is None:
@@ -90,6 +90,14 @@ class MyLikelihood(GenericLikelihoodModel):
                          self.robot.camera.rotation0.phi]
         
       # Call the parent class's fit method
+
+      if method == 'basinhopping':
+         niter_success = 5
+         T = 1.0
+         stepsize = 0.5
+         return super(MyLikelihood, self).fit(start_params=start_params, method=method, niter=maxiter, niter_success=niter_success,
+                                              T=T, stepsize=stepsize **kwargs)
+
       return super(MyLikelihood, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
    
 
@@ -157,8 +165,9 @@ def main():
    robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
    #  [2.1, 0.1, -26.9, 0.015, 0.008, 0.03]
 
+   # Robot del que parto para la optimizacion
    robot2 = copy.deepcopy(robot)
-   camera2 = Camera(2.5, 0.3, -27, 0.015, 0.008, 0.03, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
+   camera2 = Camera(2.5, 0.3, -27, 0.0, 0.0, 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
    robot2.camera = camera2
    
 
