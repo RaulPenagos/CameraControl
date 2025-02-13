@@ -12,6 +12,14 @@ from src.EulerRotation import EulerRotation
 from statsmodels.stats.outliers_influence import variance_inflation_factor  # check colinearity
 
 
+class CustomStep:
+    def __init__(self, step_sizes):
+        self.step_sizes = np.array(step_sizes)  # Array con pasos diferentes por parámetro
+
+    def __call__(self, x):
+        perturbation = np.random.uniform(-self.step_sizes, self.step_sizes)
+        return x + perturbation
+    
 
 class MyLikelihood(GenericLikelihoodModel):
 
@@ -42,10 +50,17 @@ class MyLikelihood(GenericLikelihoodModel):
    def loglike(self, params):
 
       self.robot.camera.r0 = np.asarray([params[0], params[1], params[2]])
-      self.robot.camera.rotation0 = EulerRotation(params[3], params[4], params[5]) # pitch, roll y yaw
+      # self.robot.camera.rotation0 = EulerRotation(params[0],params[1],params[2]) # pitch, roll y yaw
+      self.robot.camera.rotation0 = EulerRotation(params[3],0,0) # pitch, roll y yaw
+      # self.robot.camera.rotation0 = EulerRotation(params[3], 0, 0) # pitch, roll y yaw
+
+      # self.robot.camera.rotation0 = EulerRotation(params[3], params[4], params[5]) # pitch, roll y yaw
       # self.robot.camera.sigmaCamera = params[6]
       # self.robot.camera.cx = params[7]
       # self.robot.camera.cy = params[8]
+
+      # print('params', params)
+      # print(self.xnames)
 
       chi2 = 0.0
 
@@ -72,31 +87,34 @@ class MyLikelihood(GenericLikelihoodModel):
          chi2 += np.linalg.norm(new_measure-cPoint)**2
       print('CHI2: ', chi2)
 
-      if chi2 < 10e-6:
-         chi2 = 0
-         print('exito')
-
       return -chi2
 
 
 
-   def fit(self, start_params=None, method='bfgs', maxiter=10000, **kwargs):
+   def fit(self, start_params=None, method='basinhopping', maxiter=10000, **kwargs):
       # method = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
 
       if start_params is None:
-         # start_params = [2.1, 0.1, -27, 0, 0, 0]
-         start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2],
-                         self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta,
-                         self.robot.camera.rotation0.phi]
+         start_params =  [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2], self.robot.camera.rotation0.psi]
+         # start_params =  [self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta,
+         #                 self.robot.camera.rotation0.phi]
+         # start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2],
+         #                 self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta,
+         #                 self.robot.camera.rotation0.phi]
         
       # Call the parent class's fit method
 
       if method == 'basinhopping':
          niter_success = 5
-         T = 1.0
-         stepsize = 0.5
+         step_sizes = [1, 1, 1, 0.02, 0.02, 0.02] 
+         take_step = CustomStep(step_sizes)
+         T = 0.8   # controla la probabilidad de aceptar soluciones peores para escapar de mínimos locales (0.1 - 1)
+
+         bounds = [(-5, 5), (-5, 5), (-40, 40), (-0.35, 0.35), (-0.35, 0.35), (-0.35, 0.35)]
+         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
+
          return super(MyLikelihood, self).fit(start_params=start_params, method=method, niter=maxiter, niter_success=niter_success,
-                                              T=T, stepsize=stepsize **kwargs)
+                                             T=T,  stepsize=0.0, take_step=take_step, minimizer_kwargs = minimizer_kwargs, **kwargs)
 
       return super(MyLikelihood, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
    
@@ -113,15 +131,13 @@ class Calibration():
 
 
    def calibrate(self):
+      print('Calibrating...')
 
       for i in range(len(self.measures)):
          print('a',self.real_points[i])
          print(self.robot.fromInnerToCartesian(self.measures[i][0], self.measures[i][1], 40))
          print(self.robot.fromInnerToCartesian(self.measures[i][0], self.measures[i][1], 0) - self.real_points[i])
 
-      # Crear modelo
-      # print(f'exog: {self.real_points.shape}')
-      # print(f'endog: {self.measures.shape}')
       cal = MyLikelihood(self.measures, self.real_points, self.robot2)
       
       # Ajustar modelo
@@ -160,14 +176,14 @@ def main():
 
    table = Table(0.01, 0.0)
 
-   camera = Camera(x = 2.0, y = 0.1, z = -27.0, psi = 0.02, theta = 0.06, phi = 0.1, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
+   camera = Camera(x = 2.0, y = 0.1, z = -27.0, psi = 0.05, theta = 0.02, phi = 0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
 
    robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
    #  [2.1, 0.1, -26.9, 0.015, 0.008, 0.03]
 
    # Robot del que parto para la optimizacion
    robot2 = copy.deepcopy(robot)
-   camera2 = Camera(2.5, 0.3, -27, 0.0, 0.0, 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
+   camera2 = Camera(2.2, 0.5, -27, 0, 0.0 , 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
    robot2.camera = camera2
    
 
