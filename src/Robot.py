@@ -1,3 +1,9 @@
+##############################################################
+##############################################################
+######################## Robot program #######################
+##############################################################
+##############################################################
+
 import numpy as np
 import sys
 import math as math
@@ -5,6 +11,11 @@ from matplotlib.animation import FuncAnimation, writers
 from src.Camera import Camera
 from src.EulerRotation import EulerRotation
 from src.Table import Table
+from src.innerpoint import innerpoint
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", level=logging.INFO)
+
 
 ####################################################################
 # Some definitions                                                 #
@@ -34,16 +45,9 @@ class Robot:
         self.camera = camera
         self.table = table
         #Current position
-        self.J1 = 0.0
-        self.J2 = 0.0
-        self.Z = 0.0
-        self.J1s = 0.0
-        self.J2s = 0.0
-        self.Zs = 0.0
-        self.J1e = 0.0
-        self.J2e = 0.0
-        self.Ze = 0.0
-        self.Jz = 0.0
+        currentpos = innerpoint(0.0, 0.0, 0.0, 0.0)
+        currentposs = innerpoint(0.0, 0.0, 0.0, 0.0)
+        currentpose = innerpoint(0.0, 0.0, 0.0, 0.0)
         self.r = np.asarray([0.0, 0.0, 0.0])
         self.ux = np.asarray([1.0, 0.0, 0.0])
         self.uz = np.asarray([0.0, 1.0, 0.0])
@@ -133,7 +137,7 @@ class Robot:
         self.J2e = j2
         self.Ze = z
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function, frames=self.N, interval=1, blit=True)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=self.N, interval=50, blit=False)
         return ani
 
 
