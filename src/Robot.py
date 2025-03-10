@@ -12,6 +12,8 @@ from src.Camera import Camera
 from src.EulerRotation import EulerRotation
 from src.Table import Table
 from src.innerpoint import innerpoint
+from src.cartesianpoint import cartesianpoint
+
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", level=logging.INFO)
@@ -45,30 +47,38 @@ class Robot:
         self.camera = camera
         self.table = table
         #Current position
-        currentpos = innerpoint(0.0, 0.0, 0.0, 0.0)
-        currentposs = innerpoint(0.0, 0.0, 0.0, 0.0)
-        currentpose = innerpoint(0.0, 0.0, 0.0, 0.0)
-        self.r = np.asarray([0.0, 0.0, 0.0])
-        self.ux = np.asarray([1.0, 0.0, 0.0])
-        self.uz = np.asarray([0.0, 1.0, 0.0])
-        self.uy = np.asarray([0.0, 0.0, 1.0])
+        currentPos = innerpoint(0.0, 0.0, 0.0, 0.0)
+        currentPos1 = innerpoint(0.0, 0.0, 0.0, 0.0)
+        currentpos2 = innerpoint(0.0, 0.0, 0.0, 0.0)
+        #Current position in cartesian coordinates
+        self.currentCartesianPos = innerpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
+        #This is the definition of the field of the camera
         self.frame = [np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0])]
         self.N = 0
+        #Information for drawing
         self.fig = fig
         self.ax1 = ax1
         self.ax2 = ax2
         self.ax3 = ax3
-        self.innerMoveTo(self.J1, self.J2, self.Z, self.Jz)
+        
+        self.MoveRobotTo(currentPos)
 
+    ######### Move the robot ###########################################
+    def MoveRobotTo(self, pos):
+        
+        self.currentPos = pos 
+        self.currentCartesianPos = self.fromInnerToCartesian(pos)
+        #Update the position of the camera
+        self.updateCameraGlobals()
 
-
+    
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
         
-        self.camera.r0global = np.asarray([self.r[0], self.r[1], 0.0]) + self.camera.r0[0] * self.ux + self.camera.r0[1] * self.uy + (self.h + self.camera.r0[2]) * self.uz
-        self.camera.uxglobal = self.camera.rotation0.apply(self.ux)
-        self.camera.uyglobal = self.camera.rotation0.apply(self.uy)
-        self.camera.uzglobal = self.camera.rotation0.apply(self.uz)
+        self.camera.pos.r = np.asarray([self.r[0], self.r[1], 0.0]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.h + self.camera.r0[2]) * self.currentCartesianPos.uz
+        self.camera.pos.ux = self.camera.rotation0.apply(self.currentCartesianPos.ux)
+        self.camera.pos.uy = self.camera.rotation0.apply(self.currentCartesianPos.uy)
+        self.camera.pos.uz = self.camera.rotation0.apply(self.currentCartesianPos.uz)
         p1 = [1.0, 1.0]
         p2 = [1.0, -1.0]
         p3 = [-1.0, -1.0]
@@ -78,7 +88,8 @@ class Robot:
         self.frame[2] = self.cameraProjectionToPoint3D(p3)
         self.frame[3] = self.cameraProjectionToPoint3D(p4)
 
-       
+
+    ######### Set Check if a point is within the frame##################  
     def checkInFrame(self, p):
         
         x, y = self.point3DToCameraProjection(p)
@@ -86,17 +97,7 @@ class Robot:
             return True
         return False
 
-    ######### Move the robot ###########################################
-    def innerMoveTo(self, j1, j2, z, jz):
-        self.J1 = j1
-        self.J2 = j2
-        self.Z = z
-        self.Jz = jz
-        self.r = self.fromInnerToCartesian(self.J1, self.J2, self.Z)
-        self.ux = np.asarray([np.cos(self.J1+self.J2), np.sin(self.J1+self.J2), 0.0])
-        self.uy = np.asarray([-np.sin(self.J1+self.J2), np.cos(self.J1+self.J2), 0.0])
-        self.uz = np.asarray([0.0, 0.0, 1.0])
-        self.updateCameraGlobals()
+ 
 
     ########## Animated function ########################################
     def animation_function(self, i):
@@ -176,12 +177,16 @@ class Robot:
         return False
     
     ######################################################################
-    def fromInnerToCartesian(self, J1, J2, Z):
+    def fromInnerToCartesian(self, pos):
 
-        x = self.R1 * np.cos(J1) + self.R2 * np.cos(J2+J1)
-        y = self.R1 * np.sin(J1) + self.R2 * np.sin(J2+J1)
-        z = self.Z0 - Z
-        return np.asarray([x, y, z])
+        x = self.R1 * np.cos(pos.J1) + self.R2 * np.cos(pos.J2+pos.J1)
+        y = self.R1 * np.sin(pos.J1) + self.R2 * np.sin(pos.J2+pos.J1)
+        z = self.Z0 - pos.Z
+        ux = np.asarray([np.cos(pos.J1+pos.J2), np.sin(pos.J1+pos.J2), 0.0])
+        uy = np.asarray([-np.sin(pos.J1+pos.J2), np.cos(pos.J1+pos.J2), 0.0])
+        uz = np.asarray([0.0, 0.0, 1.0])
+        newpos = cartesianpoint(np.asarray([x, y, z]), ux, uy, uz)
+        return newpos
     
     ######################################################################
     def fromCartesianToInner(self, v):
