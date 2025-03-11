@@ -50,6 +50,8 @@ class Robot:
         self.table = table
         #Current position in cartesian coordinates
         self.currentPos = innerpoint(0.0, 0.0, 0.0, 0.0)
+        self.currentPosStart = innerpoint(0.0, 0.0, 0.0, 0.0)
+        self.currentPosEnd = innerpoint(0.0, 0.0, 0.0, 0.0)
         self.currentCartesianPos = cartesianpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
         #This is the definition of the field of the camera
         self.frame = [np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0])]
@@ -62,20 +64,33 @@ class Robot:
         
         self.MoveRobotTo(self.currentPos)
 
+
     ######### Move the robot ###########################################
     def MoveRobotTo(self, pos):
         self.currentPos = pos 
         self.currentCartesianPos = self.fromInnerToCartesian(pos)
-        logging.info(f'Moving robot to J1: {pos.J1}, J2: {pos.J2}, Z: {pos.Z}, JZ: {pos.JZ}')
+        logging.info(f'Moving robot to J1: {pos.J1}, J2: {pos.J2}, Z: {pos.Z}, JZ: {pos.Jz}')
         logging.info(f'Moving robot to x: {self.currentCartesianPos.r[0]}, y: {self.currentCartesianPos.r[1]}, z: {self.currentCartesianPos.r[2]}')
         #Update the position of the camera
         self.updateCameraGlobals()
 
     
+    ######### Move the robot ###########################################
+    def cartesianMoveTo(self, v, jz):
+        
+        status, j1, j2, Z = self.fromCartesianToInner(v)
+        if status:
+            pos = innerpoint(j1, j2, Z, jz)
+            self.MoveRobotTo(pos)
+        else:
+            logging.error('There was an error moving the robot')
+            sys.exit()     
+
+    
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
         
-        self.camera.cartesianpos.r = np.asarray([self.r[0], self.r[1], self.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.h + self.camera.r0[2]) * self.currentCartesianPos.uz
+        self.camera.cartesianpos.r = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.h + self.camera.r0[2]) * self.currentCartesianPos.uz
         self.camera.cartesianpos.ux = self.camera.rotation0.apply(self.currentCartesianPos.ux)
         self.camera.cartesianpos.uy = self.camera.rotation0.apply(self.currentCartesianPos.uy)
         self.camera.cartesianpos.uz = self.camera.rotation0.apply(self.currentCartesianPos.uz)
@@ -112,56 +127,41 @@ class Robot:
         j2 = 0
         z = 0
         if i <= a:
-            j1 = self.J1s + i * (self.J1e - self.J1s) / a
-            j2 = self.J2s
-            z = self.Zs
-            self.innerMoveTo(j1, j2, z, 0.0)
+            j1 = self.currentPosStart.J1 + i * (self.currentPosEnd.J1 - self.currentPosStart.J1) / a
+            j2 = self.currentPosStart.J2
+            z = self.currentPosStart.Z
+            jz = self.currentPosStart.Jz
+            newpos = innerpoint(j1, j2, z, jz)
+            self.MoveRobotTo(newpos)
             self.drawRobot(self.ax1, self.ax2, self.ax3, 'y')
         elif i > a and i <= b:
             k = i - a - 1
-            j1 = self.J1e
-            j2 = self.J2s + k * (self.J2e - self.J2s) / (b-a-1)
-            z = self.Zs 
-            self.innerMoveTo(j1, j2, z, 0.0)
+            j1 = self.currentPosEnd.J1
+            j2 = self.currentPosStart.J2 + k * (self.currentPosEnd.J2 - self.currentPosStart.J2) / (b-a-1)
+            z = self.currentPosStart.Z 
+            jz = self.currentPosStart.Jz
+            newpos = innerpoint(j1, j2, z, jz)
+            self.MoveRobotTo(newpos)
             self.drawRobot(self.ax1, self.ax2, self.ax3, 'y')
         else:
             k = i - b - 1
-            j1 = self.J1e
-            j2 = self.J2e
-            z = self.Zs + k * (self.Ze - self.Zs) / (self.N - 1 - b - 1)
-            self.innerMoveTo(j1, j2, z, 0.0)
+            j1 = self.currentPosEnd.J1
+            j2 = self.currentPosEnd.J2
+            z = self.currentPosStart.Z + k * (self.currentPosEnd.Z - self.currentPosStart.Z) / (self.N - 1 - b - 1)
+            jz = self.currentPosStart.Jz
+            newpos = innerpoint(j1, j2, z, jz)
+            self.MoveRobotTo(newpos)
             self.drawRobot(self.ax1, self.ax2, self.ax3, 'y')
 
     ########## Animated move ########################################
-    def animatedMove(self, j1, j2, z, jz, N):
+    def animatedMove(self, pos, N):
     
-        self.J1s = self.J1
-        self.J2s = self.J2
-        self.Zs = self.Z
-        self.J1e = j1
-        self.J2e = j2
-        self.Ze = z
+        self.currentPosStart = self.currentPos
+        self.currentPosEnd = pos
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function, frames=self.N, interval=50, blit=False)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=50, blit=False)
         return ani
-
-
-    ######### Move the robot ###########################################
-    def cartesianMoveTo(self, v, jz):
-        self.r = v
-        self.Jz = jz
-        status, j1, j2, Z = self.fromCartesianToInner(v)
-        if status:
-            self.J1 = j1
-            self.J2 = j2
-            self.Z = Z
-            self.ux = np.asarray([np.cos(self.J1+self.J2), np.sin(self.J1+self.J2), 0.0])
-            self.uy = np.asarray([-np.sin(self.J1+self.J2), np.cos(self.J1+self.J2), 0.0])
-            self.uz = np.asarray([0.0, 0.0, 1.0])
-            self.updateCameraGlobals()
-        else:
-            print('There was an error moving the robot')
-            sys.exit()     
+   
 
     ######## Auxiliary function##########################################
     def angleFromSineCosine(self, s, c):
@@ -171,6 +171,7 @@ class Robot:
         else:
             return -np.arccos(c)
 
+
     #Auxiliary function to check whether two points are the same##########
     def checkValidConversion(self, v, j):
 
@@ -179,7 +180,8 @@ class Robot:
         if (x-v[0])**2 + (y-v[1])**2 < 1e-5:
             return True
         return False
-    
+
+
     ######################################################################
     def fromInnerToCartesian(self, pos):
 
@@ -191,7 +193,8 @@ class Robot:
         uz = np.asarray([0.0, 0.0, 1.0])
         newpos = cartesianpoint(np.asarray([x, y, z]), ux, uy, uz)
         return newpos
-    
+
+
     ######################################################################
     def fromCartesianToInner(self, v):
 
@@ -235,6 +238,7 @@ class Robot:
         j1 = 1000.0
         for i, j in enumerate(pairs):
             if self.checkValidConversion(v, j):
+                #This I still need to think about it
                 if j[0] >= 0 and j[0] < j1:
                     index = i
                     j1 = j[0]
@@ -246,27 +250,28 @@ class Robot:
     #Projection of a point into the camera
     def point3DToCameraProjection(self, r):
 
-        s = self.camera.r0global - r
-        l = self.camera.focaldistance / (s[0]*self.camera.uzglobal[0] + s[1]*self.camera.uzglobal[1] + s[2]*self.camera.uzglobal[2])
-        p = self.camera.r0global + l * (self.camera.r0global - r)
-        center = self.camera.r0global + self.camera.focaldistance * self.camera.uzglobal
+        s = self.camera.cartesianpos.r - r
+        l = self.camera.focaldistance / (s[0]*self.camera.cartesianpos.uz[0] + s[1]*self.camera.cartesianpos.uz[1] + s[2]*self.camera.cartesianpos.uz[2])
+        p = self.camera.cartesianpos.r + l * (self.camera.cartesianpos.r - r)
+        center = self.camera.cartesianpos.r + self.camera.focaldistance * self.camera.cartesianpos.uz
         p = p - center
 
-        x = self.camera.cx * (p[0]*self.camera.uxglobal[0] + p[1]*self.camera.uxglobal[1] + p[2]*self.camera.uxglobal[2])
-        y = self.camera.cy * (p[0]*self.camera.uyglobal[0] + p[1]*self.camera.uyglobal[1] + p[2]*self.camera.uyglobal[2])
+        x = self.camera.cx * (p[0]*self.camera.cartesianpos.ux[0] + p[1]*self.camera.cartesianpos.ux[1] + p[2]*self.camera.cartesianpos.ux[2])
+        y = self.camera.cy * (p[0]*self.camera.cartesianpos.uy[0] + p[1]*self.camera.cartesianpos.uy[1] + p[2]*self.camera.cartesianpos.uy[2])
         return x, y
     
     #3D reconstruction point from camera
     def cameraProjectionToPoint3D(self, p):
+        
         x = p[0]/self.camera.cx
         y = p[1]/self.camera.cy
-        center = self.camera.r0global + self.camera.focaldistance * self.camera.uzglobal
+        center = self.camera.cartesianpos.r + self.camera.focaldistance * self.camera.cartesianpos.uz
 
-        t = x * self.camera.uxglobal + y * self.camera.uyglobal + center
-        s = self.camera.r0global - t
+        t = x * self.camera.cartesianpos.ux + y * self.camera.cartesianpos.uy + center
+        s = self.camera.cartesianpos.r - t
         
-        l = (self.table.z-self.camera.r0global[2])/s[2]
-        point3D = self.camera.r0global + l * s
+        l = (self.table.z-self.camera.cartesianpos.r[2])/s[2]
+        point3D = self.camera.cartesianpos.r + l * s
         return point3D
 
     # Drawing the robot
@@ -284,10 +289,10 @@ class Robot:
         self.table.plotTable(ax1, ax2, 'g.')
         p1 = [0, 0, 0]
         p2 = [0, 0, self.h]
-        p3 = [self.R1 * np.cos(self.J1), self.R1 * np.sin(self.J1), self.h]
-        p4 = [p3[0] + self.R2 * np.cos(self.J1+self.J2), p3[1] + self.R2 * np.sin(self.J1+self.J2), self.h]
+        p3 = [self.R1 * np.cos(self.currentPos.J1), self.R1 * np.sin(self.currentPos.J1), self.h]
+        p4 = [p3[0] + self.R2 * np.cos(self.currentPos.J1+self.currentPos.J2), p3[1] + self.R2 * np.sin(self.currentPos.J1+self.currentPos.J2), self.h]
         p5 = [p4[0], p4[1], self.Z0]
-        p6 = [p4[0], p4[1], self.r[2]]
+        p6 = [p4[0], p4[1], self.currentCartesianPos.r[2]]
         x_start = [p1[0], p2[0], p3[0], p4[0], p5[0]]
         y_start = [p1[1], p2[1], p3[1], p4[1], p5[1]]
         z_start = [p1[2], p2[2], p3[2], p4[2], p5[2]]
@@ -295,8 +300,8 @@ class Robot:
         y_start2 = [p5[1], p6[1]]
         z_start2 = [p5[2], p6[2]]
                
-        p7 = np.asarray([self.camera.r0global[0], self.camera.r0global[1], self.h])
-        p8 = self.camera.r0global
+        p7 = np.asarray([self.camera.cartesianpos.r[0], self.camera.cartesianpos.r[1], self.h])
+        p8 = self.camera.cartesianpos.r
         x_start3 = [p4[0], p7[0], p8[0]]
         y_start3 = [p4[1], p7[1], p8[1]]
         z_start3 = [p4[2], p7[2], p8[2]]

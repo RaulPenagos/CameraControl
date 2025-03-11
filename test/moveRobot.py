@@ -6,7 +6,7 @@ import sys
 from src.Table import Table
 from src.Camera import Camera
 from src.Robot import Robot
-
+from src.innerpoint import innerpoint
 
 
 
@@ -66,6 +66,7 @@ if __name__ == "__main__":
 
     # Generate the robot
     robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
-    ani = robot.animatedMove(-np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, 0.0, 100)
+    pos = innerpoint(-np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, 0.0)
+    ani = robot.animatedMove(pos, 100)
     
     plt.show()
