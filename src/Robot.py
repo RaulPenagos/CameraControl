@@ -26,9 +26,10 @@ logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", dat
 # Inner: (J1, J2, Z) and JZ = rotations of the axis                #
 # The robot pointer position z is Z0 - Z                           #
 ####################################################################
-# The robot has also two systems of reference:                     #
-# The absolute one (x, y, z)                                       # 
-# And the one of the second leg focused at the pointer             #
+# The robot has also two imporant systems of reference:            #
+# The absolute one with respect to the table (x, y, z)             # 
+# And the one associated to the second arm of the robot            # 
+# with the center at the robot pointer                             #
 ####################################################################
 
 
@@ -43,15 +44,13 @@ class Robot:
         #Z0 is the height of the pointer of the robot when Z = 0
         self.Z0 = Z0
         self.tol = 1e-8
+        logging.info(f'Robot R1: {R1}, R2: {R2}, h: {h}, Z0: {Z0} tol: {self.tol}')
         #Camera and table
         self.camera = camera
         self.table = table
-        #Current position
-        currentPos = innerpoint(0.0, 0.0, 0.0, 0.0)
-        currentPos1 = innerpoint(0.0, 0.0, 0.0, 0.0)
-        currentpos2 = innerpoint(0.0, 0.0, 0.0, 0.0)
         #Current position in cartesian coordinates
-        self.currentCartesianPos = innerpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
+        self.currentPos = innerpoint(0.0, 0.0, 0.0, 0.0)
+        self.currentCartesianPos = cartesianpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
         #This is the definition of the field of the camera
         self.frame = [np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0])]
         self.N = 0
@@ -61,13 +60,14 @@ class Robot:
         self.ax2 = ax2
         self.ax3 = ax3
         
-        self.MoveRobotTo(currentPos)
+        self.MoveRobotTo(self.currentPos)
 
     ######### Move the robot ###########################################
     def MoveRobotTo(self, pos):
-        
         self.currentPos = pos 
         self.currentCartesianPos = self.fromInnerToCartesian(pos)
+        logging.info(f'Moving robot to J1: {pos.J1}, J2: {pos.J2}, Z: {pos.Z}, JZ: {pos.JZ}')
+        logging.info(f'Moving robot to x: {self.currentCartesianPos.r[0]}, y: {self.currentCartesianPos.r[1]}, z: {self.currentCartesianPos.r[2]}')
         #Update the position of the camera
         self.updateCameraGlobals()
 
@@ -75,10 +75,15 @@ class Robot:
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
         
-        self.camera.pos.r = np.asarray([self.r[0], self.r[1], 0.0]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.h + self.camera.r0[2]) * self.currentCartesianPos.uz
-        self.camera.pos.ux = self.camera.rotation0.apply(self.currentCartesianPos.ux)
-        self.camera.pos.uy = self.camera.rotation0.apply(self.currentCartesianPos.uy)
-        self.camera.pos.uz = self.camera.rotation0.apply(self.currentCartesianPos.uz)
+        self.camera.cartesianpos.r = np.asarray([self.r[0], self.r[1], self.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.h + self.camera.r0[2]) * self.currentCartesianPos.uz
+        self.camera.cartesianpos.ux = self.camera.rotation0.apply(self.currentCartesianPos.ux)
+        self.camera.cartesianpos.uy = self.camera.rotation0.apply(self.currentCartesianPos.uy)
+        self.camera.cartesianpos.uz = self.camera.rotation0.apply(self.currentCartesianPos.uz)
+        logging.info(f'Moving camera to x: {self.camera.cartesianpos.r[0]}, y: {self.camera.cartesianpos.r[1]}, z: {self.camera.cartesianpos.r[2]}')
+        logging.info(f'Camera ux vector: ({self.camera.cartesianpos.ux[0]}, {self.camera.cartesianpos.ux[1]}, {self.camera.cartesianpos.ux[2]})')
+        logging.info(f'Camera uy vector: ({self.camera.cartesianpos.uy[0]}, {self.camera.cartesianpos.uy[1]}, {self.camera.cartesianpos.uy[2]})')
+        logging.info(f'Camera uz vector: ({self.camera.cartesianpos.uz[0]}, {self.camera.cartesianpos.uz[1]}, {self.camera.cartesianpos.uz[2]})')
+        
         p1 = [1.0, 1.0]
         p2 = [1.0, -1.0]
         p3 = [-1.0, -1.0]
@@ -97,7 +102,6 @@ class Robot:
             return True
         return False
 
- 
 
     ########## Animated function ########################################
     def animation_function(self, i):
