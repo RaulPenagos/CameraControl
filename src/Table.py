@@ -85,7 +85,13 @@ class Table:
         for point in self.points:
             dx = np.random.normal(0.0, self.tolerance)
             dy = np.random.normal(0.0, self.tolerance)
-            self.addActualReferencePoint(point[0] + dx, point[1] + dy, point[2])
+            r = 0.4
+            n = 50
+            step = np.pi * 2.0 / n
+            phi = 0.0
+            for i in range(0, n):
+                phi = phi + i * step
+                self.addActualReferencePoint(point[0] + dx + r * np.cos(phi), point[1] + dy + r * np.sin(phi), point[2])
 
 
     def plotTable(self, ax1, ax2, t, alpha=0.0):

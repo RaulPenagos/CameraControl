@@ -49,9 +49,9 @@ class Robot:
         self.camera = camera
         self.table = table
         #Current position in cartesian coordinates
-        self.currentPos = innerpoint(0.0, 0.0, 0.0, 0.0)
-        self.currentPosStart = innerpoint(0.0, 0.0, 0.0, 0.0)
-        self.currentPosEnd = innerpoint(0.0, 0.0, 0.0, 0.0)
+        self.currentPos = innerpoint(0.0, 0.0, 3.0, 0.0)
+        self.currentPosStart = innerpoint(0.0, 0.0, 3.0, 0.0)
+        self.currentPosEnd = innerpoint(0.0, 0.0, 3.0, 0.0)
         self.currentCartesianPos = cartesianpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
         #This is the definition of the field of the camera
         self.frame = [np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0])]
@@ -159,7 +159,7 @@ class Robot:
         self.currentPosStart = self.currentPos
         self.currentPosEnd = pos
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=0.01, blit=False)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=1.0, blit=False)
         return ani
    
 
@@ -300,11 +300,11 @@ class Robot:
         y_start2 = [p5[1], p6[1]]
         z_start2 = [p5[2], p6[2]]
                
-        p7 = np.asarray([self.camera.cartesianpos.r[0], self.camera.cartesianpos.r[1], self.h])
+        p7 = np.asarray([p6[0], p6[1], self.camera.cartesianpos.r[2]])
         p8 = self.camera.cartesianpos.r
-        x_start3 = [p4[0], p7[0], p8[0]]
-        y_start3 = [p4[1], p7[1], p8[1]]
-        z_start3 = [p4[2], p7[2], p8[2]]
+        x_start3 = [p7[0], p8[0]]
+        y_start3 = [p7[1], p8[1]]
+        z_start3 = [p7[2], p8[2]]
 
         k1 = [1.0, 1.0]
         k2 = [1.0, -1.0]
@@ -351,5 +351,5 @@ class Robot:
         for p in self.table.actualPoints:
             if self.checkInFrame(p):
                 x, y = self.point3DToCameraProjection(p)
-                ax3.plot(x, y, 'b*', alpha=alpha)
+                ax3.plot(x, y, 'g.', alpha=alpha)
 

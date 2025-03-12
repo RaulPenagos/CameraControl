@@ -62,7 +62,7 @@ if __name__ == "__main__":
     table.plotTable(ax1, ax2, 'g.')
 
     # Generate the camera  
-    camera = Camera(x = 2.0, y = 0.0, z = -2.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
+    camera = Camera(x = 12.0, y = 0.0, z = 2.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
     # Generate the robot
     robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
