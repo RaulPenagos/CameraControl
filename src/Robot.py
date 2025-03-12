@@ -90,7 +90,7 @@ class Robot:
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
         
-        self.camera.cartesianpos.r = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.h + self.camera.r0[2]) * self.currentCartesianPos.uz
+        self.camera.cartesianpos.r = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.camera.r0[2]) * self.currentCartesianPos.uz
         self.camera.cartesianpos.ux = self.camera.rotation0.apply(self.currentCartesianPos.ux)
         self.camera.cartesianpos.uy = self.camera.rotation0.apply(self.currentCartesianPos.uy)
         self.camera.cartesianpos.uz = self.camera.rotation0.apply(self.currentCartesianPos.uz)
@@ -159,7 +159,7 @@ class Robot:
         self.currentPosStart = self.currentPos
         self.currentPosEnd = pos
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=50, blit=False)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=0.01, blit=False)
         return ani
    
 
