@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Generate the robot
     robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
-    pos = innerpoint(-np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, 0.0)
-    ani = robot.animatedMove(pos, 50)
+    pos = innerpoint(-np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, np.pi/2.0)
+    ani = robot.animatedMove(pos, 100)
     
     plt.show()

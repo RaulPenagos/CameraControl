@@ -53,6 +53,7 @@ class Robot:
         self.currentPosStart = innerpoint(0.0, 0.0, 3.0, 0.0)
         self.currentPosEnd = innerpoint(0.0, 0.0, 3.0, 0.0)
         self.currentCartesianPos = cartesianpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
+        self.jzrot = EulerRotation(0.0, 0.0, 0.0)
         #This is the definition of the field of the camera
         self.frame = [np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0])]
         self.N = 0
@@ -67,7 +68,8 @@ class Robot:
 
     ######### Move the robot ###########################################
     def MoveRobotTo(self, pos):
-        self.currentPos = pos 
+        self.currentPos = pos
+        self.jzrot.setFromAngles(pos.Jz, 0.0, 0.0)
         self.currentCartesianPos = self.fromInnerToCartesian(pos)
         logging.info(f'Moving robot to J1: {pos.J1}, J2: {pos.J2}, Z: {pos.Z}, JZ: {pos.Jz}')
         logging.info(f'Moving robot to x: {self.currentCartesianPos.r[0]}, y: {self.currentCartesianPos.r[1]}, z: {self.currentCartesianPos.r[2]}')
@@ -90,10 +92,16 @@ class Robot:
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
         
-        self.camera.cartesianpos.r = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.camera.r0[2]) * self.currentCartesianPos.uz
-        self.camera.cartesianpos.ux = self.camera.rotation0.apply(self.currentCartesianPos.ux)
-        self.camera.cartesianpos.uy = self.camera.rotation0.apply(self.currentCartesianPos.uy)
-        self.camera.cartesianpos.uz = self.camera.rotation0.apply(self.currentCartesianPos.uz)
+        rcamera = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.camera.r0[2]) * self.currentCartesianPos.uz
+        raxis = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + (self.camera.r0[2]) * self.currentCartesianPos.uz
+        diff = rcamera - raxis
+        self.camera.cartesianpos.r = raxis + self.jzrot.apply(diff)
+        uxcamera = self.jzrot.apply(self.currentCartesianPos.ux)
+        uycamera = self.jzrot.apply(self.currentCartesianPos.uy)
+        uzcamera = self.jzrot.apply(self.currentCartesianPos.uz)
+        self.camera.cartesianpos.ux = self.camera.rotation0.apply(uxcamera)
+        self.camera.cartesianpos.uy = self.camera.rotation0.apply(uycamera)
+        self.camera.cartesianpos.uz = self.camera.rotation0.apply(uzcamera)
         logging.info(f'Moving camera to x: {self.camera.cartesianpos.r[0]}, y: {self.camera.cartesianpos.r[1]}, z: {self.camera.cartesianpos.r[2]}')
         logging.info(f'Camera ux vector: ({self.camera.cartesianpos.ux[0]}, {self.camera.cartesianpos.ux[1]}, {self.camera.cartesianpos.ux[2]})')
         logging.info(f'Camera uy vector: ({self.camera.cartesianpos.uy[0]}, {self.camera.cartesianpos.uy[1]}, {self.camera.cartesianpos.uy[2]})')
@@ -147,8 +155,9 @@ class Robot:
             k = i - b - 1
             j1 = self.currentPosEnd.J1
             j2 = self.currentPosEnd.J2
-            z = self.currentPosStart.Z + k * (self.currentPosEnd.Z - self.currentPosStart.Z) / (self.N - 1 - b - 1)
-            jz = self.currentPosStart.Jz
+            #z = self.currentPosStart.Z + k * (self.currentPosEnd.Z - self.currentPosStart.Z) / (self.N - 1 - b - 1)
+            z = self.currentPosStart.Z
+            jz = self.currentPosStart.Jz + k * (self.currentPosEnd.Jz - self.currentPosStart.Jz) / (self.N -1 - b -1)
             newpos = innerpoint(j1, j2, z, jz)
             self.MoveRobotTo(newpos)
             self.drawRobot(self.ax1, self.ax2, self.ax3, 'y')
