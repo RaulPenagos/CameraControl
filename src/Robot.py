@@ -168,7 +168,7 @@ class Robot:
         self.currentPosStart = self.currentPos
         self.currentPosEnd = pos
         self.N = N
-        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=1.0, blit=False)
+        ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=1.0, blit=False, repeat=False)
         return ani
    
 
