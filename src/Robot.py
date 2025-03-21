@@ -49,9 +49,9 @@ class Robot:
         self.camera = camera
         self.table = table
         #Current position in cartesian coordinates
-        self.currentPos = innerpoint(0.0, 0.0, 3.0, 0.0)
-        self.currentPosStart = innerpoint(0.0, 0.0, 3.0, 0.0)
-        self.currentPosEnd = innerpoint(0.0, 0.0, 3.0, 0.0)
+        self.currentPos = innerpoint(0.0, 0.0, 33.0, 0.0)
+        self.currentPosStart = innerpoint(0.0, 0.0, 33.0, 0.0)
+        self.currentPosEnd = innerpoint(0.0, 0.0, 33.0, 0.0)
         self.currentCartesianPos = cartesianpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]), np.asarray([0.0, 0.0, 0.0]))
         self.jzrot = EulerRotation(0.0, 0.0, 0.0)
         #This is the definition of the field of the camera
@@ -244,13 +244,11 @@ class Robot:
         pairs = [[J1pp, J2pp], [J1pm, J2pm], [J1mp, J2mp], [J1mm, J2mm]]
 
         index = -1
-        j1 = 1000.0
         for i, j in enumerate(pairs):
             if self.checkValidConversion(v, j):
                 #This I still need to think about it
-                if j[0] >= 0 and j[0] < j1:
+                if j[0] <= j[1] - j[0]:
                     index = i
-                    j1 = j[0]
         if index == -1:
             return False, 0, 0, 0
         else:
@@ -273,7 +271,8 @@ class Robot:
     def cameraProjectionToPoint3D(self, p):
         
         x = p[0]/self.camera.cx
-        y = p[1]/self.camera.cy
+        y = p[1]/self.camera.cy  
+       
         center = self.camera.cartesianpos.r + self.camera.focaldistance * self.camera.cartesianpos.uz
 
         t = x * self.camera.cartesianpos.ux + y * self.camera.cartesianpos.uy + center
