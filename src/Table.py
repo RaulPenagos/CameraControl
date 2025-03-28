@@ -1,14 +1,24 @@
-import numpy as np
+##############################################################
+##############################################################
+########### Define the set of points to the table ############
+##############################################################
+##############################################################
 
+import numpy as np
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", level=logging.INFO)
 
 class Table:
 
     def __init__(self, tolerance, z):
-
+        
+        logger.info(f'Starting the setup of the table with tolerance {tolerance} and z {z}')
         self.tolerance = tolerance
         self.z = z
         self.points = []
         self.actualPoints = []
+        #Table dimensions
         self.pLL = np.asarray([-38.0, -65.0, self.z])
         self.pUL = np.asarray([-38.0, 36.0, self.z])
         self.pLR = np.asarray([61.0, -65.0, self.z])
@@ -16,25 +26,18 @@ class Table:
         self.generatePoints()
         self.makeActualTable()
         
+
     def addReferencePoint(self, x, y, z):
         
         self.points.append(np.asarray([x,y,z]))
 
-    def addActualReferencePoint(self, x, y, z):
 
+    def addActualReferencePoint(self, x, y, z):
+ 
+        logger.info(f'Adding point ({x}, {y}, {z})')
         self.actualPoints.append(np.asarray([x,y,z]))
 
-    def toNumpy(self, p):
 
-        return np.asmatrix(p)
-    
-    def prepareForFit(self, r):
-
-        x = self.toNumpy(r)
-        y = x.flatten()
-        y = np.asarray(y)
-        return y[0,:]
-    
     def generatePoints(self):
 
         #Network 1
@@ -75,13 +78,21 @@ class Table:
         self.addReferencePoint(-14.0, 19.0, self.z)
         self.addReferencePoint(14.0, 19.0, self.z)
 
+
     # This produces the actual positions according to the tolerances
     def makeActualTable(self):
   
         for point in self.points:
             dx = np.random.normal(0.0, self.tolerance)
             dy = np.random.normal(0.0, self.tolerance)
-            self.addActualReferencePoint(point[0] + dx, point[1] + dy, point[2])
+            #self.addActualReferencePoint(point[0] + dx, point[1] + dy, point[2])
+            r = 0.4
+            n = 50
+            step = np.pi * 2.0 / n
+            phi = 0.0
+            for i in range(0, n):
+                phi = phi + i * step
+                self.addActualReferencePoint(point[0] + dx + r * np.cos(phi), point[1] + dy + r * np.sin(phi), point[2])
 
 
     def plotTable(self, ax1, ax2, t, alpha=0.0):

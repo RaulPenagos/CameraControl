@@ -13,6 +13,13 @@ class EulerRotation():
         self.vx, self.vy, self.vz = self.fromMatrixToVectors(self.rot)
         self.invrot = np.linalg.inv(self.rot)
 
+    def setFromAngles(self, psi, theta, phi):
+        self.psi = psi
+        self.theta = theta
+        self.phi = phi
+        self.rot = self.makeMatrix(self.psi, self.theta, self.phi)
+        self.vx, self.vy, self.vz = self.fromMatrixToVectors(self.rot)
+        self.invrot = np.linalg.inv(self.rot)
 
     def setFromVectors(self, vx, vy, vz):
         

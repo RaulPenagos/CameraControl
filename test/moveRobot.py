@@ -6,7 +6,7 @@ import sys
 from src.Table import Table
 from src.Camera import Camera
 from src.Robot import Robot
-
+from src.innerpoint import innerpoint
 
 
 
@@ -62,10 +62,19 @@ if __name__ == "__main__":
     table.plotTable(ax1, ax2, 'g.')
 
     # Generate the camera  
-    camera = Camera(x = 2.0, y = 0.0, z = -27.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
+    camera = Camera(x = 2.0, y = 0.0, z = 2.0, psi = 0.0, theta = np.pi/6.0, phi = 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
     # Generate the robot
-    robot = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
-    ani = robot.animatedMove(-np.pi/4.0, np.pi + np.pi/4.0, 10.0, 0.0, 200)
-    
+    #robot = Robot(60.77, 37.981, 24.019, 34.0, table, camera, fig, ax1, ax2, ax3)
+    robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
+
+    p = [13.622240767897285, 18.848860261690156, 0.0]
+    pos_robot = robot.fromCartesianToInner(p)
+    jz = 1
+    pos_inner = innerpoint(pos_robot[1], pos_robot[2], pos_robot[3], jz)
+    # pos_inner = innerpoint(-np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, np.pi/2.0)
+    robot.cameraAim(p, 0)
+    ani = robot.animatedMove(pos_inner, 100)
+    #pos = innerpoint(np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, np.pi/4.0)
+    #ani = robot.animatedMove(pos, 100)
     plt.show()
