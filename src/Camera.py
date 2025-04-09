@@ -184,6 +184,7 @@ class Camera(IDS_Camera):
 
     def __init__(self, x, y, z, psi, theta, phi, cx, cy, focaldistance, sigmaCamera):
 
+
         super().__init__()
 
         #This is the position of the camera with respect to the system of arm2
@@ -197,7 +198,6 @@ class Camera(IDS_Camera):
         self.focusdistance = 3.6  # cm
         # r0 global, uxglobal, uyglobal, uz global ?
         self.cartesianpos = cartesianpoint(np.asarray([0.0, 0.0, 0.0]), np.asarray([1.0, 0.0, 0.0]), np.asarray([0.0, 1.0, 0.0]), np.asarray([0.0, 0.0, 1.0]))
-
 
     def setCameraGlobalInformation(self, pos):
         #  No la usa

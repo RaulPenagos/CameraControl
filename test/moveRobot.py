@@ -62,7 +62,9 @@ if __name__ == "__main__":
     table.plotTable(ax1, ax2, 'g.')
 
     # Generate the camera  
-    camera = Camera(x = 2.0, y = 0.0, z = 20.0, psi = 0.0, theta = 0 * np.pi/6.0, phi = 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+
+    camera = Camera(x = 2.0, y = 0.0, z = 2.0, psi = 0.0, theta = np.pi/6.0, phi = 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+
 
     # Generate the robot
     robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
@@ -91,6 +93,7 @@ def old(robot):
     # pos_inner = innerpoint(-np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, np.pi/2.0)
     robot.cameraAim(p, 0)
     ani = robot.animatedMove(pos_inner, 100)
+
     #pos = innerpoint(np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, np.pi/4.0)
     #ani = robot.animatedMove(pos, 100)
     plt.show()

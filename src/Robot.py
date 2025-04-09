@@ -17,7 +17,9 @@ from src.cartesianpoint import cartesianpoint
 
 import logging
 logger = logging.getLogger(__name__)
+
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", level=logging.ERROR)  # level=logging.INFO o level=logging.ERROR
+
 
 
 ####################################################################
@@ -92,9 +94,6 @@ class Robot:
             logging.error(f'There was an error moving the robot. R = {r}')
             sys.exit()     
 
-        
-
-    
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
         
@@ -112,6 +111,7 @@ class Robot:
         # logging.info(f'Camera ux vector: ({self.camera.cartesianpos.ux[0]}, {self.camera.cartesianpos.ux[1]}, {self.camera.cartesianpos.ux[2]})')
         # logging.info(f'Camera uy vector: ({self.camera.cartesianpos.uy[0]}, {self.camera.cartesianpos.uy[1]}, {self.camera.cartesianpos.uy[2]})')
         # logging.info(f'Camera uz vector: ({self.camera.cartesianpos.uz[0]}, {self.camera.cartesianpos.uz[1]}, {self.camera.cartesianpos.uz[2]})')
+
         
         p1 = [1.0, 1.0]
         p2 = [1.0, -1.0]
@@ -254,6 +254,7 @@ class Robot:
         pairs = [[J1pp, J2pp], [J1pm, J2pm], [J1mp, J2mp], [J1mm, J2mm]]
         # print('-----------------------')
         index = -1
+
         j1_min = np.inf
         for i, j in enumerate(pairs):
             if self.checkValidConversion(v, j):
@@ -261,6 +262,7 @@ class Robot:
                 if j[0] < j1_min:
                     index = i
                     j2_min = j[0]
+
 
         if index == -1:
             # print('fallo 2')
@@ -274,13 +276,14 @@ class Robot:
         s = self.camera.cartesianpos.r - r
         l = self.camera.focaldistance / (s[0]*self.camera.cartesianpos.uz[0] + s[1]*self.camera.cartesianpos.uz[1] + s[2]*self.camera.cartesianpos.uz[2])
         p = self.camera.cartesianpos.r + l * (self.camera.cartesianpos.r - r)
-
+        
         center = self.camera.cartesianpos.r + self.camera.focaldistance * self.camera.cartesianpos.uz
         p = p - center
 
 
         # print(p[0]*self.camera.cartesianpos.ux[0], p[1]*self.camera.cartesianpos.ux[1], p[2]*self.camera.cartesianpos.ux[2])
         # print(p[0]*self.camera.cartesianpos.uy[0], p[1]*self.camera.cartesianpos.uy[1], p[2]*self.camera.cartesianpos.uy[2])
+
 
         x = self.camera.cx * (p[0]*self.camera.cartesianpos.ux[0] + p[1]*self.camera.cartesianpos.ux[1] + p[2]*self.camera.cartesianpos.ux[2])
         y = self.camera.cy * (p[0]*self.camera.cartesianpos.uy[0] + p[1]*self.camera.cartesianpos.uy[1] + p[2]*self.camera.cartesianpos.uy[2])
