@@ -312,7 +312,7 @@ class Robot:
 
         x = camera_r[0] + t*pointing[0]
         y = camera_r[1] + t*pointing[1]
-        z = self.camera.cartesianpos.r[2] - self.camera.focusdistance
+        z = camera_r[2] + self.camera.focusdistance*pointing[2]
 
         return [x,y,z]
 
@@ -364,7 +364,7 @@ class Robot:
 
         pos_robot = np.array([point[0] + np.cos(jz)*radius_cam_robot, 
                               point[1] + np.sin(jz)*radius_cam_robot,
-                              self.camera.focusdistance])
+                              self.camera.r0[2] + self.camera.focusdistance])
         
         self.cartesianMoveTo(pos_robot, 0)
 

@@ -62,12 +62,28 @@ if __name__ == "__main__":
     table.plotTable(ax1, ax2, 'g.')
 
     # Generate the camera  
-    camera = Camera(x = 2.0, y = 0.0, z = 2.0, psi = 0.0, theta = np.pi/6.0, phi = 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+    camera = Camera(x = 2.0, y = 0.0, z = 20.0, psi = 0.0, theta = 0 * np.pi/6.0, phi = 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
     # Generate the robot
-    #robot = Robot(60.77, 37.981, 24.019, 34.0, table, camera, fig, ax1, ax2, ax3)
     robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
 
+    robot.cartesianMoveTo([20 ,20, 0], 0)
+    pos_J = robot.fromCartesianToInner([23.5, 30, 0])
+    print(pos_J)
+    pos = innerpoint(pos_J[1], pos_J[2], pos_J[3]+10, np.pi/4.0)
+
+    ani = robot.animatedMove(pos, 8)
+    plt.show()
+    print(robot.currentCartesianPos.r)
+    print(robot.currentPos.Z)
+    print(robot.camera.r0)
+    print(robot.camera.cartesianpos.r)
+
+
+
+
+def old(robot):
+    #  COSAS PASADAS
     p = [13.622240767897285, 18.848860261690156, 0.0]
     pos_robot = robot.fromCartesianToInner(p)
     jz = 1
@@ -78,3 +94,4 @@ if __name__ == "__main__":
     #pos = innerpoint(np.pi/4.0, np.pi/6.0 + np.pi/4.0, 10.0, np.pi/4.0)
     #ani = robot.animatedMove(pos, 100)
     plt.show()
+

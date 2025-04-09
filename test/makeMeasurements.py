@@ -102,7 +102,7 @@ def make_measurements(robot, print_points = False, print_forbidden_points = Fals
 
 def make_measurements_camera_pointing(robot, show: bool = False):
     """
-    Gets where the unitary vector of the camera points to for every of all calibration points
+    Gets where the unitary vector of the camera points to, for every of all calibration points
     Excepting those that are close to R=60 or further.
     """
     measurements = np.asarray([])
@@ -110,23 +110,26 @@ def make_measurements_camera_pointing(robot, show: bool = False):
     points = np.asarray([])
 
     for n, point in enumerate(robot.table.points):
+        
+        point = [point[0] + np.random.normal(0, 0.02), point[1] + np.random.normal(0, 0.02), point[2]]
+        # point = [point[0] + 0.05, point[1] + 0.05, point[2]]
+
         if robot.fromCartesianToInner(point)[0] != False and np.linalg.norm(point) < 50:
 
-            #  Measure from different angles
-            # for j in np.linspace(0, np.pi, 8): 
+            # Measure from different angles
+            for j in np.linspace(0, 2*np.pi, 5): 
+ 
+                # robot.cameraAim(point, j)
+                robot.cameraAim(point, 0)
 
-            # robot.cameraAim(point, j)
-            robot.cameraAim(point, 0)
+                x, y = robot.point3DToCameraProjection(point)
 
+                measurements = np.append(measurements, robot.currentPos)
 
-            x, y = robot.point3DToCameraProjection(point)
+                camera_measurements = np.append(camera_measurements, np.array([x,y]))
 
-            measurements = np.append(measurements, robot.currentPos)
-
-            camera_measurements = np.append(camera_measurements, np.array([x,y]))
-
-            points = np.append(points, point)
-            
+                points = np.append(points, point)
+                
         else:
             
             continue
@@ -197,9 +200,9 @@ def main():
 
     # make_measurements(robot, False)
 
-    # make_measurements_camera_pointing(robot, True)
+    make_measurements_camera_pointing(robot, True)
 
-    test_cameraAim(robot)
+    # test_cameraAim(robot)
 
 
 if __name__ == "__main__":

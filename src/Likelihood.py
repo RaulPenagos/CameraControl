@@ -1,10 +1,9 @@
 from statsmodels.base.model import GenericLikelihoodModel
 import numpy as np
-import sys
-import matplotlib.pyplot as plt
 import copy
 import sys
 import os
+import random
 
 # Get the root directory of the project
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -29,42 +28,34 @@ by taking pictures of the points and
 Author: Raul Penagos
 Date: February 12th 2025
 """
-class CustomStep:
-    def __init__(self, step_sizes):
-        self.step_sizes = np.array(step_sizes)  # Array con pasos diferentes por parámetro
 
-    def __call__(self, x):
-        perturbation = np.random.uniform(-self.step_sizes, self.step_sizes)
-        return x + perturbation
-    
 
 class MyLikelihood(GenericLikelihoodModel):
 
    def __init__(self, endog, exog, robot, **kwds):
       """
+      Optimizes x , y and z
       endog (array):  reference postions [X1, Y1, Z1, X2, Y2, Z2, ...] for each point
       exog (array): measurements [innerpoint, [X, Y]]   innerpoint(J1, J2, Z, Jz) 
       robot: robot cuyos parametros quiero optimizar
       **kwds: parametros iniciales (~ reales) a partir de los cuales minimizo
       """
-
       self.n = int(len(endog))
       self.endog = np.asarray(endog)
       J_points, camera_points = exog 
-      exog = np.asarray([])
-
+      self.cPoints_Jpoints = J_points
+      self.cPoints_CameraPoints = camera_points
+      self.rPoints = np.copy(self.endog)
+ 
       print('N points: ', self.n)
+
+      exog = np.asarray([])
 
       for i in range(self.n):
          x = J_points[i].J1, J_points[i].J2, J_points[i].Z, J_points[i].Jz, camera_points[i][0], camera_points[i][1]
          exog = np.append(exog, x)
 
       self.exog = exog.reshape([self.n, 6])
-
-      self.rPoints = np.copy(self.endog)
-      self.cPoints = np.copy(self.exog)
-
-      print(self.rPoints.shape, self.cPoints.shape)
 
       self.robot = robot
       # self.sigma2 = self.robot.sigmaCamera**2 + self.robot.sigmaRobot**2
@@ -75,116 +66,212 @@ class MyLikelihood(GenericLikelihoodModel):
    def loglike(self, params):
 
       self.robot.camera.r0 = np.asarray([params[0], params[1], params[2]])
-      # self.robot.camera.rotation0 = EulerRotation(params[0],params[1],params[2]) # pitch, roll y yaw
-      # self.robot.camera.rotation0 = EulerRotation(params[3],0,0) # pitch, roll y yaw
-      # self.robot.camera.rotation0 = EulerRotation(params[3], 0, 0) # pitch, roll y yaw
+      self.robot.camera.rotation0 = EulerRotation(params[3],params[4],params[5]) # pitch, roll y yaw
 
-      self.robot.camera.rotation0 = EulerRotation(params[3], params[4], params[5]) # pitch, roll y yaw
-      # self.robot.camera.sigmaCamera = params[6]
-      # self.robot.camera.cx = params[7]
-      # self.robot.camera.cy = params[8]
-
-      # print('params', params)
-      # print(self.xnames)
 
       chi2 = 0.0
 
+      measurements = np.asarray([]) # I measure the X Y 
+      # pointings = np.asarray([]) # I measure the xyz 
 
-      measurements2 = np.asarray([]) # I measure the J1 J2 X Y points 
-      measurements3 = np.asarray([]) # I measure the xyz points 
+      for i, Jpoint in enumerate(self.cPoints_Jpoints):
 
-      
-      for point in self.rPoints:
-         #  Loglike 1*************************************************
-         # self.robot.cameraAim(point, 0)
-         # print('Point:', point)
-         # print('Camera Pointing: ', self.robot.cameraPointing())
-         # j1, j2, z, jz = self.robot.currentPos.J1, self.robot.currentPos.J2, self.robot.currentPos.Z, self.robot.currentPos.Jz    
-         # x, y = self.robot.point3DToCameraProjection(point)
-         # print(x, y)
-         # measurements = np.append(measurements, [j1, j2, z, jz, x, y])
+         self.robot.MoveRobotTo(Jpoint)
+         X, Y = self.robot.point3DToCameraProjection(self.endog[i])
 
-         # Loglike2***************************************************
-         self.robot.cameraAim(point, 0)
-         # print(':)')
-         j1, j2 = self.robot.currentPos.J1 , self.robot.currentPos.J2         
-         x, y = self.robot.point3DToCameraProjection(point)
-         measurements2 = np.append(measurements2, [j1, j2 , x, y])
+         measurements = np.append(measurements, [X,Y])
+         # pointings = np.append(pointings, self.robot.cameraPointing())
 
-         # Loglike2b***************************************************
-         # self.robot.cameraAim(point, 0)
-         # # print(':)')
-         # j1, j2 = self.robot.currentPos.J1 , self.robot.currentPos.J2         
-         # x, y = self.robot.point3DToCameraProjection(point)
-         # measurements2 = np.append(measurements2, [j1, j2])
+      measurements = measurements.reshape([int(len(measurements)/2), 2])  
+      # pointings = pointings.reshape([int(len(pointings)/3), 3])  
 
-         # Loglike3*************************************************
-         # self.robot.cameraAim(point, 0)
-         # x, y, z = self.robot.cameraPointing()
-         # measurements3 = np.append(measurements3, [x,y,z])
-         
-
-      # cameraProjectionToPoint3D  me da un punto x,y,z
-      measurements2 = measurements2.reshape([int(len(measurements2)/4), 4])  
-      measurements3 = measurements3.reshape([int(len(measurements3)/3), 3])  
-
-
-      # Loglike2
       for i in range(0, self.n):
-         new_measure = measurements2[i]
-         cPoint_p = self.cPoints[i]
-         cPoint = cPoint_p[0], cPoint_p[1], cPoint_p[4], cPoint_p[5]  # J1, J2, X, Y
-         chi2 += np.linalg.norm(new_measure-cPoint)**2
-      
-      # Loglike2b
-      # for i in range(0, self.n):
-      #    new_measure = measurements2[i]
-      #    cPoint_p = self.cPoints[i]
-      #    cPoint = cPoint_p[0], cPoint_p[1]  # J1, J2
-      #    chi2 += np.linalg.norm(new_measure-cPoint)**2
-   
-      #  Loglike3
-      # for i in range(0, self.n):
-      #    new_measure = measurements3[i]   # x y z medidas
-      #    rPoint = self.rPoints[i]
-         
-      #    chi2 += np.linalg.norm(new_measure-rPoint)**2
 
+         new_measure = measurements[i]
+         real_measure = self.cPoints_CameraPoints[i]
+
+         # point = self.rPoints[i][0:2]
+         # pointed_point = pointings[i][0:2]
+
+         chi2 += np.linalg.norm(new_measure-real_measure)**2 # + np.linalg.norm(point-pointed_point)**2 
+   
+      print(f'CHI2: {chi2}', end = "\r")
+
+      return -chi2
+
+
+   def fit(self, start_params=None, method='minimize', maxiter=10000, **kwargs):
+      # methods = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
+
+      if start_params is None:
+         start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2],
+                         self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta,
+                         self.robot.camera.rotation0.phi]
+        
+      # Call the parent class's fit method
+
+      return super(MyLikelihood, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
+   
+
+class MyLikelihoodxyz(GenericLikelihoodModel):
+
+   def __init__(self, endog, exog, robot, **kwds):
+      """
+      Optimizes x , y and z
+      endog (array):  reference postions [X1, Y1, Z1, X2, Y2, Z2, ...] for each point
+      exog (array): measurements [innerpoint, [X, Y]]   innerpoint(J1, J2, Z, Jz) 
+      robot: robot cuyos parametros quiero optimizar
+      **kwds: parametros iniciales (~ reales) a partir de los cuales minimizo
+      """
+      self.n = int(len(endog))
+      self.endog = np.asarray(endog)
+      J_points, camera_points = exog 
+      self.cPoints_Jpoints = J_points
+      self.cPoints_CameraPoints = camera_points
+      self.rPoints = np.copy(self.endog)
+ 
+      print('N points: ', self.n)
+
+      exog = np.asarray([])
+
+      for i in range(self.n):
+         x = J_points[i].J1, J_points[i].J2, J_points[i].Z, J_points[i].Jz, camera_points[i][0], camera_points[i][1]
+         exog = np.append(exog, x)
+
+      self.exog = exog.reshape([self.n, 6])
+
+      self.robot = robot
+      # self.sigma2 = self.robot.sigmaCamera**2 + self.robot.sigmaRobot**2
+
+      super(MyLikelihoodxyz, self).__init__(self.endog, self.exog, self.loglike, **kwds)  # self.loglike añadido
+
+
+   def loglike(self, params):
+
+      self.robot.camera.r0 = np.asarray([params[0], params[1], params[2]])
+
+      chi2 = 0.0
+
+      measurements = np.asarray([]) # I measure the X Y 
+      # pointings = np.asarray([]) # I measure the xyz 
+
+      for i, Jpoint in enumerate(self.cPoints_Jpoints):
+
+         self.robot.MoveRobotTo(Jpoint)
+         X, Y = self.robot.point3DToCameraProjection(self.endog[i])
+
+         measurements = np.append(measurements, [X,Y])
+         # pointings = np.append(pointings, self.robot.cameraPointing())
+
+      measurements = measurements.reshape([int(len(measurements)/2), 2])  
+      # pointings = pointings.reshape([int(len(pointings)/3), 3])  
+
+      for i in range(0, self.n):
+
+         new_measure = measurements[i]
+         real_measure = self.cPoints_CameraPoints[i]
+
+         # point = self.rPoints[i][0:2]
+         # pointed_point = pointings[i][0:2]
+
+         chi2 += np.linalg.norm(new_measure-real_measure)**2 # + np.linalg.norm(point-pointed_point)**2 
+   
+      print(f'CHI2: {chi2}', end = "\r")
+
+      return -chi2
+
+
+   def fit(self, start_params=None, method='powell', maxiter=10000, **kwargs):
+      # methods = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
+
+      if start_params is None:
+         start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2]]
+        
+      # Call the parent class's fit method
+
+      return super(MyLikelihoodxyz, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
+   
+
+class MyLikelihoodAngles(GenericLikelihoodModel):
+
+   def __init__(self, endog, exog, robot, **kwds):
+      """
+      Optimizes psi, theta and phi.
+      endog (array):  reference postions [X1, Y1, Z1, X2, Y2, Z2, ...] for each point
+      exog (array): measurements [innerpoint, [X, Y]]   innerpoint(J1, J2, Z, Jz) 
+      robot: robot cuyos parametros quiero optimizar
+      **kwds: parametros iniciales (~ reales) a partir de los cuales minimizo
+      """
+
+      self.n = int(len(endog))
+      self.endog = np.asarray(endog)
+      J_points, camera_points = exog 
+      self.cPoints_Jpoints = J_points
+      self.cPoints_CameraPoints = camera_points
+      self.rPoints = np.copy(self.endog)
+ 
+      # print('N points: ', self.n)
+
+      exog = np.asarray([])
+
+      for i in range(self.n):
+         x = J_points[i].J1, J_points[i].J2, J_points[i].Z, J_points[i].Jz, camera_points[i][0], camera_points[i][1]
+         exog = np.append(exog, x)
+
+      self.exog = exog.reshape([self.n, 6])
+
+      self.robot = robot
+      # self.sigma2 = self.robot.sigmaCamera**2 + self.robot.sigmaRobot**2
+
+      super(MyLikelihoodAngles, self).__init__(self.endog, self.exog, self.loglike, **kwds)  # self.loglike añadido
+
+
+   def loglike(self, params):
+
+      self.robot.camera.rotation0 = EulerRotation(params[0],params[1],params[2]) # pitch, roll y yaw
+
+      chi2 = 0.0
+
+      measurements = np.asarray([]) # I measure the X Y 
+      # pointings = np.asarray([]) # I measure the xyz 
+
+      for i, Jpoint in enumerate(self.cPoints_Jpoints):
+
+         self.robot.MoveRobotTo(Jpoint)
+         X, Y = self.robot.point3DToCameraProjection(self.endog[i])
+
+         measurements = np.append(measurements, [X,Y])
+         # pointings = np.append(pointings, self.robot.cameraPointing())
+
+      measurements = measurements.reshape([int(len(measurements)/2), 2])  
+      # pointings = pointings.reshape([int(len(pointings)/3), 3])  
+
+      for i in range(0, self.n):
+
+         new_measure = measurements[i]
+         real_measure = self.cPoints_CameraPoints[i]
+
+         # point = self.rPoints[i][0:2]
+         # pointed_point = pointings[i][0:2]
+
+         chi2 += np.linalg.norm(new_measure-real_measure)**2 # + np.linalg.norm(point-pointed_point)**2 
+   
       print(f'CHI2: {chi2}', end = "\r")
 
       return -chi2
 
 
 
-   def fit(self, start_params=None, method='basinhopping', maxiter=10000, **kwargs):
+   def fit(self, start_params=None, method='powell', maxiter=10000, **kwargs):
       # methods = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
 
       if start_params is None:
-         # start_params =  [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2], 
-         #                  self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta, self.robot.camera.rotation0.phi]
-         # start_params =  [self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta,
-         #                 self.robot.camera.rotation0.phi]
-         start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], self.robot.camera.r0[2], 
-                         self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta, self.robot.camera.rotation0.phi]
+         start_params =  [self.robot.camera.rotation0.psi, self.robot.camera.rotation0.theta,
+                         self.robot.camera.rotation0.phi]
         
       # Call the parent class's fit method
 
-      if method == 'basinhopping':
-
-         niter_success = 5
-         step_sizes = [0.1, 0.1, 0.1, 0.002, 0.002, 0.002] 
-         take_step = CustomStep(step_sizes)
-         T = 0.8   # controla la probabilidad de aceptar soluciones peores para escapar de mínimos locales (0.1 - 1)
-
-         bounds = [(-5, 5), (-5, 5), (-10, 10), (-0.35, 0.35), (-0.35, 0.35), (-0.35, 0.35)]
-         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
-
-         return super(MyLikelihood, self).fit(start_params=start_params, method=method, niter=maxiter, niter_success=niter_success,
-                                             T=T,  stepsize=0.0, take_step=take_step, minimizer_kwargs = minimizer_kwargs, **kwargs)
-      
-      else:
-
-         return super(MyLikelihood, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
+      return super(MyLikelihoodAngles, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
    
 
 class Calibration():
@@ -201,25 +288,78 @@ class Calibration():
 
       print(camera_measurements)
 
+   def calibratePos(self, show = False):
+      print('Calibrating Position...')
 
-   def calibrate(self):
-
-      print('Calibrating...')
-
-      # for i in range(n):
-      #    print('a',self.real_points[i])
-      #    print(self.robot.fromInnerToCartesian(self.measures[i][0], self.measures[i][1], 40))
-      #    print(self.robot.fromInnerToCartesian(self.measures[i][0], self.measures[i][1], 0) - self.real_points[i])
+      cal = MyLikelihoodxyz(self.real_points, [self.measurements, self.camera_measurements], self.robot2)
       
-      # No uso datos camara aun
+      # Ajustar modelo
+      results = cal.fit() 
+
+      if show:
+         # Mostrar resultados
+         print("\n Full results summary:")
+         print(results.summary(xname = ['x','y','z']))
+
+      return results.params[0], results.params[1], results.params[2]
+
+   def calibrateAngles(self, show = False): 
+      print('Calibrating Angles...')
+
+      cal = MyLikelihoodAngles(self.real_points, [self.measurements, self.camera_measurements], self.robot2)
+      
+      # Ajustar modelo
+      results = cal.fit() 
+
+      if show:
+         # Mostrar resultados
+         print("\n Full results summary:")
+         print(results.summary(xname = ['psi','theta','psi']))
+
+      return results.params[0], results.params[1], results.params[2]
+
+   def calibrateAll(self, show = False): 
+      print('Calibrating All...')
+
       cal = MyLikelihood(self.real_points, [self.measurements, self.camera_measurements], self.robot2)
       
       # Ajustar modelo
-      results = cal.fit()    
+      results = cal.fit() 
 
-      # Mostrar resultados
-      print("\n Full results summary:")
-      print(results.summary(xname = ['x','y','z','psi', 'theta', 'phi']))
+      if show:
+         # Mostrar resultados
+         print("\n Full results summary:")
+         print(results.summary(xname =  ['x','y','z','psi','theta','psi']))
+
+      return results.params[0], results.params[1], results.params[2], results.params[3], results.params[4], results.params[5]
+
+
+   def FullCal(self):
+
+      a,b,c = self.robot2.camera.r0[0], self.robot2.camera.r0[1], self.robot2.camera.r0[2]
+      d,e,f = self.robot2.camera.rotation0.psi, self.robot2.camera.rotation0.theta, self.robot2.camera.rotation0.phi
+
+      for t in np.linspace(0.2, 0, 10):
+
+         lr = random.gauss(1, t)
+
+         a,b,c = self.calibratePos()
+         self.robot2.camera = Camera(lr*a, lr*b, lr*c, d, e , f, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+
+         # d,e,f = self.calibrateAngles()
+         # self.robot2.camera = Camera(a, b, c, lr*d, lr*e, lr*f, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+
+         a,b,c,d,e,f = self.calibrateAll()
+         self.robot2.camera = Camera(a, b, c, d, e, f, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+
+
+
+
+         print(f'Results FullCall:  (lr= {lr:.2f}) ////////////////////////////////////\n')
+         print(f'x:  {a}    y:{b}   z:{c}')
+         print(f'psi:  {d}    theta:{e}   psi:{f}')
+
+
 
 
 def main():
@@ -249,18 +389,19 @@ def main():
 
 
    table = Table(0.01, 0.0)
-   # table.plotTable(ax1, ax2, 'g.')
 
    # Generate the camera  
-   camera = Camera(x = 5.0, y = 0.0, z = 2.0, psi = np.pi/170, theta =  np.pi/160, phi = np.pi/180, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+   camera = Camera(x = 5.0, y = 0, z = 2.0, psi = 0.01, theta =  0.02, phi = 0.03, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
    # psi = np.pi/170, theta =  np.pi/160, phi = np.pi/180
+   # psi = np.pi/360, theta =  2*np.pi/360, phi = np.pi/360
+   # psi = 0.08, theta =  0.06, phi = 0.054,
 
    # Generate the robot
    robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
 
    #  My guess for the actual robot
    robot2 = copy.deepcopy(robot)
-   camera2 = Camera(8, 1, 2.5, 0.0, 0.0 , 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+   camera2 = Camera(4.4, 0.99, 3.6, 0.01, 0.01 , 0.01 , cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
    # camera2 = Camera(4.9, 0.57, 2.5, -0.06, -0.07 , 0.006, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
 
@@ -268,7 +409,10 @@ def main():
    
    Cal_test = Calibration(robot, robot2)
 
-   Cal_test.calibrate()
+   # Cal_test.calibrateAll(True)
+   Cal_test.calibrateAngles(True)
+   # Cal_test.calibratePos(True)
+
 
     
 
