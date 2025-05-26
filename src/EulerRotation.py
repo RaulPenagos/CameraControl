@@ -10,6 +10,7 @@ class EulerRotation():
         self.theta = theta
         self.phi = phi
         self.rot = self.makeMatrix(self.psi, self.theta, self.phi)
+        # print(self.rot)
         self.vx, self.vy, self.vz = self.fromMatrixToVectors(self.rot)
         self.invrot = np.linalg.inv(self.rot)
 

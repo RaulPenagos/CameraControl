@@ -28,8 +28,58 @@ def reachable_points(robot):
     print('Img Saved')
 
 
+def divide_points(robot):
+    """
+    Divides the points on a table so you can get a test and a tarining family of points
+    """
+    plt.close('all')
+    plt.figure(figsize = (8, 8))
+
+    points_cal = np.array([])
+    points_test = np.array([])
+
+    number_of_test_points = 100
+    x = int(len(robot.table.actualPoints)/number_of_test_points)
+
+    for i, point in enumerate(robot.table.actualPoints):
+        print(point)
+        if i%x == 0:
+            points_test = np.append(points_test, np.asarray([point]))
+        else:
+            points_cal = np.append(points_cal, np.asarray([point]))
+
+    points_test = points_test.reshape([int(len(points_test)/3), 3]) 
+    points_cal = points_cal.reshape([int(len(points_cal)/3), 3]) 
+
+    for point in points_cal:
+
+        if robot.fromCartesianToInner(point)[0] != False:  
+            # Alcanzable
+            plt.plot(point[0], point[1], 'og', label = 'Cal')
+        else:
+            plt.plot(point[0], point[1], 'or', label = 'Cal')
+
+
+    for point in points_test:
+
+        if robot.fromCartesianToInner(point)[0] != False:  
+            # Alcanzable
+            plt.plot(point[0], point[1], 'ob', label = 'Test')
+        else:
+            plt.plot(point[0], point[1], 'om', label = 'Test')
+
+
+    plt.axhline(0, color='k', linestyle='--')
+    plt.axvline(0, color='k', linestyle='--')
+    plt.savefig('img/puntos_test_cal.png')
+    plt.show()
+    print('Img Saved')
+    print(len(points_test))
+
+
 def make_measurements(robot, print_points = False, print_forbidden_points = False):
     """
+    CACA
     Measures position of all calibration points, taking pictures from a range of different angles.
     Excepting points that are close to R=60 or further.
     """
@@ -104,6 +154,10 @@ def make_measurements_camera_pointing(robot, show: bool = False):
     """
     Gets where the unitary vector of the camera points to, for every of all calibration points
     Excepting those that are close to R=60 or further.
+    Output: 
+        measurements: list of inner points 
+        points: list of [x,y,z] for each point
+        camera_measurements: [X,Y] projection of every point 
     """
     measurements = np.asarray([])
     camera_measurements = np.asarray([])
@@ -111,7 +165,7 @@ def make_measurements_camera_pointing(robot, show: bool = False):
 
     for n, point in enumerate(robot.table.points):
         
-        point = [point[0] + np.random.normal(0, 0.02), point[1] + np.random.normal(0, 0.02), point[2]]
+        point = [point[0] + np.random.normal(0, 0.02), point[1] + np.random.normal(0, 0.02), point[2] + robot.camera.focusdistance]
         # point = [point[0] + 0.05, point[1] + 0.05, point[2]]
 
         if robot.fromCartesianToInner(point)[0] != False and np.linalg.norm(point) < 50:
@@ -129,6 +183,10 @@ def make_measurements_camera_pointing(robot, show: bool = False):
                 camera_measurements = np.append(camera_measurements, np.array([x,y]))
 
                 points = np.append(points, point)
+
+                # print(robot.camera.cartesianpos.r[2] - point[2])
+                # print('camera', robot.camera.cartesianpos.r[2])
+
                 
         else:
             
@@ -147,7 +205,7 @@ def make_measurements_camera_pointing(robot, show: bool = False):
 
             measure = measurements[i]
             camera = camera_measurements[i]
-            print(measure.J1,measure.J2,measure.Z,measure.Jz, '\t ||', camera[0] , camera[1], '\t ||', points[i,0], points[i,1], points[i,2])
+            print(f'{measure.J1:.3f}, {measure.J2:.3f}, {measure.Z:.3f}, {measure.Jz:.3f}', '||', f'{camera[0]:.3f}, {camera[1]:.3f} ', '||', f'{points[i,0]:.2f}, {points[i,1]:.2f}, {points[i,2]:.2f}')
     return measurements, points, camera_measurements
     
 
@@ -189,7 +247,8 @@ def main():
     # table.plotTable(ax1, ax2, 'g.')
 
     # Generate the camera  
-    camera = Camera(x = 5.0, y = 0.0, z = 2.0, psi = np.pi/150, theta =  np.pi/140, phi = np.pi/180, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+    # camera = Camera(x = 0, y = 0.0, z = 0, psi = np.pi/150, theta =  np.pi/140, phi = np.pi/180, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+    camera = Camera(x = 5, y = 0.0, z = 0, psi = 0, theta =  0.2, phi = 0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
     # Generate the robot
     robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
@@ -200,7 +259,8 @@ def main():
 
     # make_measurements(robot, False)
 
-    make_measurements_camera_pointing(robot, True)
+    # make_measurements_camera_pointing(robot, True)
+    divide_points(robot)
 
     # test_cameraAim(robot)
 

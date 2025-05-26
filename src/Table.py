@@ -6,6 +6,7 @@
 
 import numpy as np
 import logging
+import random
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", level=logging.INFO)
 
@@ -13,7 +14,7 @@ class Table:
 
     def __init__(self, tolerance, z):
         
-        logger.info(f'Starting the setup of the table with tolerance {tolerance} and z {z}')
+        # logger.info(f'Starting the setup of the table with tolerance {tolerance} and z {z}')
         self.tolerance = tolerance
         self.z = z
         self.points = []
@@ -34,7 +35,7 @@ class Table:
 
     def addActualReferencePoint(self, x, y, z):
  
-        logger.info(f'Adding point ({x}, {y}, {z})')
+        # logger.info(f'Adding point ({x}, {y}, {z})')
         self.actualPoints.append(np.asarray([x,y,z]))
 
 
@@ -47,36 +48,36 @@ class Table:
             for iy in y:
                 if iy > -24.9:
                     continue
-                self.addReferencePoint(ix, iy, self.z)
+                self.addReferencePoint(ix, iy, self.z) # + random.random())
         for iy in y:
-            self.addReferencePoint(50.0, iy, self.z)
+            self.addReferencePoint(50.0, iy, self.z) # + random.random())
         for ix in x:
-            self.addReferencePoint(ix, 25.0, self.z)
+            self.addReferencePoint(ix, 25.0, self.z) # + random.random())
         for ix in x:
             if ix > -25.1:
                 continue
             for iy in y:
-                self.addReferencePoint(ix, iy, self.z)
+                self.addReferencePoint(ix, iy, self.z) # + random.random())
         #Horizontal Line 1
-        self.addReferencePoint(0, -60.0, self.z)
-        self.addReferencePoint(50.0, -60.0, self.z)
+        self.addReferencePoint(0, -60.0, self.z) # + random.random())
+        self.addReferencePoint(50.0, -60.0, self.z) # + random.random())
 
         #Vertical Line Right
         y2 = [-60.0, -50.0, -32.0, 24.0]
         for iy in y2:
-            self.addReferencePoint(60.0, iy, self.z)
+            self.addReferencePoint(60.0, iy, self.z) # + random.random())
         #Horizontal Line 2
-        self.addReferencePoint(-14.0, -19.0, self.z)
-        self.addReferencePoint(14.0, -19.0, self.z)
+        self.addReferencePoint(-14.0, -19.0, self.z) # + random.random())
+        self.addReferencePoint(14.0, -19.0, self.z) # + random.random())
         #Horizontal Line 3
-        self.addReferencePoint(-19.0, -14.0, self.z)
-        self.addReferencePoint(19.0, -14.0, self.z)
+        self.addReferencePoint(-19.0, -14.0, self.z) # + random.random())
+        self.addReferencePoint(19.0, -14.0, self.z) # + random.random())
         #Horizontal Line 4
-        self.addReferencePoint(-19.0, 14.0, self.z)
-        self.addReferencePoint(19.0, 14.0, self.z)
+        self.addReferencePoint(-19.0, 14.0, self.z) # + random.random())
+        self.addReferencePoint(19.0, 14.0, self.z) # + random.random())
         #Horizontal Line 4
-        self.addReferencePoint(-14.0, 19.0, self.z)
-        self.addReferencePoint(14.0, 19.0, self.z)
+        self.addReferencePoint(-14.0, 19.0, self.z) # + random.random())
+        self.addReferencePoint(14.0, 19.0, self.z) # + random.random())
 
 
     # This produces the actual positions according to the tolerances

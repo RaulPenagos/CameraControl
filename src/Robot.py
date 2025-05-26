@@ -6,6 +6,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 import sys
 import math as math
 from matplotlib.animation import FuncAnimation, writers
@@ -47,7 +48,7 @@ class Robot:
         #Z0 is the height of the pointer of the robot when Z = 0
         self.Z0 = Z0
         self.tol = 1e-8
-        logging.info(f'Robot R1: {R1}, R2: {R2}, h: {h}, Z0: {Z0} tol: {self.tol}')
+        # logging.info(f'Robot R1: {R1}, R2: {R2}, h: {h}, Z0: {Z0} tol: {self.tol}')
         #Camera and table
         self.camera = camera
         self.table = table
@@ -66,6 +67,9 @@ class Robot:
         self.ax2 = ax2
         self.ax3 = ax3
         
+        # delta(x,y) = 0.01 mm   delta(z) = 0.004 mm
+        self.sigma = [0.001, 0.001, 0.0004]  # cm
+
         self.MoveRobotTo(self.currentPos)
 
 
@@ -82,6 +86,10 @@ class Robot:
     
     ######### Move the robot ###########################################
     def cartesianMoveTo(self, v, jz):
+
+        v = np.array([v[0] + random.normalvariate(0, self.sigma[0]),
+                      v[1] + random.normalvariate(0, self.sigma[1]),
+                      v[2] + random.normalvariate(0, self.sigma[2])])
         
         status, j1, j2, Z = self.fromCartesianToInner(v)
         # print(status, j1, j2, Z )
@@ -175,6 +183,7 @@ class Robot:
         self.currentPosEnd = pos
         self.N = N
         ani = FuncAnimation(self.fig, self.animation_function, frames=N, interval=1.0, blit=False, repeat=False)
+        # print('returns:', type(ani))
         return ani
    
 
@@ -205,6 +214,11 @@ class Robot:
         x = self.R1 * np.cos(pos.J1) + self.R2 * np.cos(pos.J2+pos.J1)
         y = self.R1 * np.sin(pos.J1) + self.R2 * np.sin(pos.J2+pos.J1)
         z = self.Z0 - pos.Z
+
+        x = x + random.normalvariate(0, self.sigma[0]) 
+        y = y + random.normalvariate(0, self.sigma[1])
+        z = z + random.normalvariate(0, self.sigma[2])
+
         ux = np.asarray([np.cos(pos.J1+pos.J2), np.sin(pos.J1+pos.J2), 0.0])
         uy = np.asarray([-np.sin(pos.J1+pos.J2), np.cos(pos.J1+pos.J2), 0.0])
         uz = np.asarray([0.0, 0.0, 1.0])
@@ -215,9 +229,9 @@ class Robot:
     ######################################################################
     def fromCartesianToInner(self, v):
 
-        x = v[0]
-        y = v[1]
-        z = v[2]
+        x = v[0] + random.normalvariate(0, self.sigma[0]) 
+        y = v[1] + random.normalvariate(0, self.sigma[1])
+        z = v[2] + random.normalvariate(0, self.sigma[2])
         Z = self.Z0 - z
         Delta = (x**2 + y**2 + self.R1**2 - self.R2**2)/(2.0*self.R1)
         a = (x**2 + y**2)
@@ -319,55 +333,26 @@ class Robot:
 
         return [x,y,z]
 
-    def cameraAim_developing(self, point: list, jz: float = 0):
-        # Apuntar  a un punto con la camara
-        # Primero giro la camara al jz deseado y luego muevo el robot
-
-        self.cartesianMoveTo(point, jz)
-
-        pointing = self.camera.cartesianpos.uz
-
-        # Position where we want to move the camera   --> Depende de Jz?
-        camera_r = np.asarray([0, 0, 0]) 
-
-        t = self.camera.focusdistance/(np.linalg.norm(pointing))
-
-        # print('t:', t)
-        # print('pointing:', pointing)
-
-        camera_r = point + t *pointing
-        # print('camera_r:', camera_r)
-        # print('camera.cartesianpos.r:',self.camera.cartesianpos.r)
-        camera_robot = self.currentCartesianPos.r -  self.camera.cartesianpos.r 
-        # print('camera_robot:',np.linalg.norm(camera_robot[0:2]))
-
-        # Posicion a la que mover el robot:
-        r_objective_robot = camera_r + camera_robot
-        # r_objective_robot_table = np.append( r_objective_robot[0:2])
-        # print('r_objective_robot:', r_objective_robot)
-        self.cartesianMoveTo(r_objective_robot, jz)
-        # print('cartesianpos:', self.camera.cartesianpos.r)
-
-        # print('camera_r:', camera_r)
-        # print('camera.cartesianpos.r:',self.camera.cartesianpos.r)
-        camera_robot = self.currentCartesianPos.r -  self.camera.cartesianpos.r 
-        # print('camera_robot:',np.linalg.norm(camera_robot[0:2]))
-
-        # Posicion a la que mover el robot:
-        r_objective_robot = camera_r + camera_robot
-        # r_objective_robot_table = np.append( r_objective_robot[0:2])
-        # print('r_objective_robot:', r_objective_robot)
-        self.cartesianMoveTo(r_objective_robot, jz)
-
     def cameraAim(self, cartesianpoint: list, jz: float = 0):
+        """
+        Points to a cartesianpoint(x,y,z) at the focudistance of the camera
+        """
 
         point = np.array([cartesianpoint[0], cartesianpoint[1]])
         
         radius_cam_robot = np.linalg.norm(self.camera.r0[0:2])
 
+        # Proyecto la distancia focal en función del ángulo de inclinación de la cámara
+        normal_table = np.asarray([0, 0, 1])
+        uz_camera = self.camera.cartesianpos.uz
+        pitch = math.acos(np.dot(normal_table, uz_camera)/(np.linalg.norm(normal_table)*np.linalg.norm(uz_camera)))
+        import random
+        correct_camera_z = self.camera.focusdistance*math.cos(pitch)  #+  random.randint(0, 3)
+
+
         pos_robot = np.array([point[0] + np.cos(jz)*radius_cam_robot, 
                               point[1] + np.sin(jz)*radius_cam_robot,
-                              self.camera.r0[2] + self.camera.focusdistance])
+                              cartesianpoint[2] - self.camera.r0[2] + correct_camera_z])
         
         self.cartesianMoveTo(pos_robot, 0)
 

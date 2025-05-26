@@ -96,10 +96,10 @@ class MyLikelihood(GenericLikelihoodModel):
       
       for point in self.rPoints:
          # Loglike0***************************************************
-         # self.robot.cameraAim(point, 0)
-         # j1, j2 = self.robot.currentPos.J1 , self.robot.currentPos.J2         
-         # X, Y = self.robot.point3DToCameraProjection(point)
-         # measurements2 = np.append(measurements2, [j1, j2 , X, Y])
+         self.robot.cameraAim(point, 0)
+         j1, j2 = self.robot.currentPos.J1 , self.robot.currentPos.J2         
+         X, Y = self.robot.point3DToCameraProjection(point)
+         measurements2 = np.append(measurements2, [j1, j2 , X, Y])
 
 
          #  Loglike 1*************************************************
@@ -137,16 +137,18 @@ class MyLikelihood(GenericLikelihoodModel):
          
 
       # cameraProjectionToPoint3D  me da un punto x,y,z
-      # measurements2 = measurements2.reshape([int(len(measurements2)/4), 4])  
+      measurements2 = measurements2.reshape([int(len(measurements2)/4), 4])  
       # measurements3 = measurements3.reshape([int(len(measurements3)/3), 3])  
 
 
       # Loglike0
-      # for i in range(0, self.n):
-      #    new_measure2 = measurements2[i]
-      #    cPoint_p = self.cPoints[i]
-      #    cPoint = cPoint_p[0], cPoint_p[1], cPoint_p[4], cPoint_p[5]  # J1, J2, X, Y
-      #    chi2 += np.linalg.norm(new_measure2-cPoint)**2 
+      for i in range(0, self.n):
+         new_measure2 = np.asarray(measurements2[i])
+         cPoint_p = self.cPoints[i]
+         cPoint = np.asarray([cPoint_p[0], cPoint_p[1], cPoint_p[4], cPoint_p[5]])  # J1, J2, X, Y
+         print(f'cpoint', cPoint[2:] - cPoint[2:])
+         print(f'new_measure2',new_measure2)
+         chi2 += np.linalg.norm(new_measure2[2:]-cPoint[2:])**2 
 
 
       # Loglike1A
@@ -288,7 +290,7 @@ def main():
    #  My guess for the actual robot
    robot2 = copy.deepcopy(robot)
    camera2 = Camera(3.5, 1, 3.0, 0.0, 0.0 , 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
-   camera2 = Camera(7.9982, 0.1326, 3.1552, 0.0, 0.0 , 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+   # camera2 = Camera(7.9982, 0.1326, 3.1552, 0.0, 0.0 , 0.0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
    # camera2 = Camera(4.9, 0.57, 2.5, -0.06, -0.07 , 0.006, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
 
