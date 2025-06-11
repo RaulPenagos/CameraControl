@@ -146,8 +146,8 @@ class MyLikelihood(GenericLikelihoodModel):
          new_measure2 = np.asarray(measurements2[i])
          cPoint_p = self.cPoints[i]
          cPoint = np.asarray([cPoint_p[0], cPoint_p[1], cPoint_p[4], cPoint_p[5]])  # J1, J2, X, Y
-         print(f'cpoint', cPoint[2:] - cPoint[2:])
-         print(f'new_measure2',new_measure2)
+         # print(f'cpoint', cPoint[2:] - cPoint[2:])
+         # print(f'new_measure2',new_measure2)
          chi2 += np.linalg.norm(new_measure2[2:]-cPoint[2:])**2 
 
 
@@ -183,7 +183,7 @@ class MyLikelihood(GenericLikelihoodModel):
 
 
 
-   def fit(self, start_params=None, method='powell', maxiter=10000, **kwargs):
+   def fit(self, start_params=None, method='basinhopping', maxiter=10000, **kwargs):
       # methods = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
 
       if start_params is None:

@@ -67,6 +67,7 @@ class Robot:
         self.ax2 = ax2
         self.ax3 = ax3
         
+        # According to Staubli, for our SCARA
         # delta(x,y) = 0.01 mm   delta(z) = 0.004 mm
         self.sigma = [0.001, 0.001, 0.0004]  # cm
 
@@ -104,8 +105,9 @@ class Robot:
 
     ######### Set camera globals #######################################
     def updateCameraGlobals(self):
-        
+        # rcamera = cartesian_r_robot + r0_camera
         rcamera = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + self.camera.r0[0] * self.currentCartesianPos.ux + self.camera.r0[1] * self.currentCartesianPos.uy + (self.camera.r0[2]) * self.currentCartesianPos.uz
+        #r raxis = cartesian_r_robot + 
         raxis = np.asarray([self.currentCartesianPos.r[0], self.currentCartesianPos.r[1], self.currentCartesianPos.r[2]]) + (self.camera.r0[2]) * self.currentCartesianPos.uz
         diff = rcamera - raxis
         self.camera.cartesianpos.r = raxis + self.jzrot.apply(diff)
@@ -284,7 +286,7 @@ class Robot:
         else:
             return True, pairs[index][0], pairs[index][1]-pairs[index][0], Z
 
-    #Projection of a point into the camera
+    #Projection of a point into the camera#################################
     def point3DToCameraProjection(self, r):
 
         s = self.camera.cartesianpos.r - r
@@ -303,7 +305,7 @@ class Robot:
         y = self.camera.cy * (p[0]*self.camera.cartesianpos.uy[0] + p[1]*self.camera.cartesianpos.uy[1] + p[2]*self.camera.cartesianpos.uy[2])
         return x, y
     
-    #3D reconstruction point from camera
+    #3D reconstruction point from camera###################################
     def cameraProjectionToPoint3D(self, p):
         
         x = p[0]/self.camera.cx
@@ -318,9 +320,14 @@ class Robot:
         point3D = self.camera.cartesianpos.r + l * s
         return point3D
     
+    ### GEt where camera is pointing to#####################################
     def cameraPointing(self): 
-        # Returns intersection between camera z pointing and table
-        # Saber a que punto apunta la camara
+        """
+        Returns intersection between camera's u_z and the table.
+        Returns:
+            [x,y,z]: point of the table where the camera is pointing
+        """
+
         z_table = self.table.z
         camera_r = self.camera.cartesianpos.r  
         pointing = self.camera.cartesianpos.uz
@@ -333,33 +340,41 @@ class Robot:
 
         return [x,y,z]
 
+    ####Focus the camera to a cartesianpoint(x,y,z) at the focudistance of the camera####
     def cameraAim(self, cartesianpoint: list, jz: float = 0):
         """
-        Points to a cartesianpoint(x,y,z) at the focudistance of the camera
+        Moves the robot to a position where the camera will be pointing to cartesianpoint.
+        The camera will be at z = focusdistance(3,6 cm) over the point.
+
+        Input: 
+            cartesianpoint: [x,y,z]
+            jz: angle around the point that you want to use to approach the point (-pi,pi)
+                not exactly the Jz that robot will use.
         """
 
-        point = np.array([cartesianpoint[0], cartesianpoint[1]])
+        # Take just x,y
+        point = np.array([cartesianpoint[0], cartesianpoint[1]])  
         
         radius_cam_robot = np.linalg.norm(self.camera.r0[0:2])
 
-        # Proyecto la distancia focal en función del ángulo de inclinación de la cámara
+        # Proyecto la distancia focal en función del ángulo de inclinación de la cámara.
+        # Corrigiendo la inclinación (el enfoque al punto será perfecto).
         normal_table = np.asarray([0, 0, 1])
         uz_camera = self.camera.cartesianpos.uz
         pitch = math.acos(np.dot(normal_table, uz_camera)/(np.linalg.norm(normal_table)*np.linalg.norm(uz_camera)))
-        import random
-        correct_camera_z = self.camera.focusdistance*math.cos(pitch)  #+  random.randint(0, 3)
-
-
+        correct_camera_z = self.camera.focusdistance*math.cos(pitch)  
+        
         pos_robot = np.array([point[0] + np.cos(jz)*radius_cam_robot, 
                               point[1] + np.sin(jz)*radius_cam_robot,
-                              cartesianpoint[2] - self.camera.r0[2] + correct_camera_z])
+                              cartesianpoint[2] + correct_camera_z - self.camera.r0[2] ])
         
         self.cartesianMoveTo(pos_robot, 0)
 
+        # Calculate the Jz the robot needs at 'pos_robot' to view the point
         if radius_cam_robot != 0:
 
-            r_p = (point - pos_robot[0:2])/np.linalg.norm(point - pos_robot[0:2])
             # vector robotR2-point
+            r_p = (point - pos_robot[0:2])/np.linalg.norm(point - pos_robot[0:2])
 
             r_r1 = np.array([np.cos(self.currentPos.J1)*self.R1, np.sin(self.currentPos.J1)*self.R1])
 
@@ -380,10 +395,7 @@ class Robot:
             
             self.cartesianMoveTo(pos_robot, jz)
 
-
-
-
-    # Drawing the robot
+    # Drawing the robot###########################################################
     def drawRobot(self, ax1, ax2, ax3, t, alpha=1.0):
     
         ax1.clear()

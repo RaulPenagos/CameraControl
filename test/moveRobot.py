@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import sys
 
 from src.Table import Table
@@ -36,27 +37,31 @@ def main():
     ax3.axes.set_ylim((-1.0, 1.0))
 
 
+
     table = Table(0.01, 0.0)
     table.plotTable(ax1, ax2, 'g.')
 
     # Generate the camera  
-    camera = Camera(x = 5, y = 0, z = 5, psi = 0, theta =  0, phi = 0, cx = -0.5, cy = -0.5, focaldistance = 10, sigmaCamera = 0.001)
+    camera = Camera(x = 5 , y = 0, z = 10, psi = math.pi/180*5, theta = - math.pi/180*4, phi = math.pi/180*3.5, cx = -0.5, cy = -0.5, focaldistance = 20, sigmaCamera = 0.001)
+    camera = Camera(x = 5 , y = 0, z = 10, psi =0, theta = 0, phi = 0, cx = -0.5, cy = -0.5, focaldistance = 20, sigmaCamera = 0.001)
 
     # Generate the robot
     robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
 
-    robot.cartesianMoveTo([10 ,-22, 0], 0)
-    pos_J = robot.fromCartesianToInner([20, -25, 0])
 
-    print(pos_J)
-    pos = innerpoint(pos_J[1], pos_J[2], pos_J[3]+10, 0)
-    pos = innerpoint(1.464, -2.364, 26.406, 2.242)
+    pos_J = (1.4496846765933695, -2.3673601581311843, 39.41379211339806, 2.223481693056126)
+    pos = innerpoint(pos_J[0], pos_J[1], 0, pos_J[3])
 
 
     print('Animation')
-    ani = robot.animatedMove(pos, 60)
+    # ani = robot.animatedMove(robot.currentPos, 3)
+    # ani = robot.animatedMove(pos, 20)
     # plt.show()
-    ani.save("animacion.gif", writer="ffmpeg")
+    # ani.save("animacion.gif", writer="ffmpeg")
+
+
+    robot.MoveRobotTo(pos)
+    robot.cameraAim([25, -25, 0])
 
     print(robot.currentCartesianPos.r)
     print(robot.currentPos.Z)
@@ -66,6 +71,9 @@ def main():
     print('psi: ', robot.camera.rotation0.psi)
     print('theta: ', robot.camera.rotation0.theta)
     print('phi: ', robot.camera.rotation0.phi)    
+
+    
+
 
 if __name__ == "__main__":
     main()

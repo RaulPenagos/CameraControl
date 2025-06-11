@@ -7,8 +7,9 @@ import datetime as dt
 
 from scipy.optimize import minimize 
 from statsmodels.base.model import GenericLikelihoodModel
+
 """
-Script defining Camera and CircleCompleter. Enables the processing of taken images.
+Script defining Camera and CircleCompleter class. Enables the processing of taken images.
 Using CircleCompleter, it enables to calculate the center of circles given an image
 of just a portion.
 
@@ -23,13 +24,18 @@ class Image:
     Methods of the class:
     save()    display()   binarize()  soften()    find_cm()   search_border()  circle_treatment()
 
-    Para facilitar la minimaización definir unos valores iniciales del centro acorde con lo esperado
+    Para facilitar la minimización definir unos valores iniciales del centro acorde con lo esperado
     """
-    def __init__(self, matrix):
+    def __init__(self, matrix, save_path: str = './img'):
+        """
+        Input
+            matrix: matriz de la imagen
+            save_path: path relativo a la posición de este script donde se quiere guardar
+        """
         self.image = np.copy(matrix[:,:,0])
         self.image_original = np.copy(matrix)
         self.timestamp = dt.datetime.now()
-        self.file_name = f'img/img_{self.timestamp.strftime("%Y%m%d_%H%M%S")}.png'
+        self.file_name = save_path + f'/img_{self.timestamp.strftime("%Y%m%d_%H%M%S")}.png'
 
         dirname = os.path.dirname(__file__)  # Edit where to save the img
         self.abs_filename = os.path.join(dirname, self.file_name)
@@ -42,33 +48,34 @@ class Image:
         Save the image to the file name given by the Image's time stamp.
         Make sure the folder exists.
         """
-        plt.savefig(self.abs_filename)
+        plt.figure(figsize = (5,5))        
+        plt.savefig(self.abs_filename, bbox_inches='tight', pad_inches=0)
 
     def display(self, save = False):
         """
         Show and optionally save the image on screen.
         Shows CM if it has been computed.
         """
-
         plt.close("all")
-        plt.figure(figsize = (5,5))
-        plt.imshow(self.image, cmap = 'gray')
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.imshow(self.image, cmap='gray')
+        ax.axis('off')  # Oculta ejes y ticks
 
         if self.cm != (None, None):
-            plt.plot(self.cm[0], self.cm[1], 'or')
+            ax.plot(self.cm[0], self.cm[1], 'or')
 
-        if save: 
-            plt.savefig(self.abs_filename)
+        if save:
+            plt.savefig(self.abs_filename, bbox_inches='tight', pad_inches=0)
 
         plt.show()
 
-    def binarize(self):
+    def binarize(self, tresh: float = 2):
         """
-        Binarize the image to (0, 255) (black and white).
+        Binarize the image to (0, 255) grey scale (black and white).
         """
-        self.image = np.where(self.image > self.image.max()/2, 255, 0)
+        self.image = np.where(self.image > self.image.max()/tresh, 255, 0)
         return self
-        
+    
     def soften(self, m = 8 ):
         """
         Soften filter smoothens the image by taking an average of a m size
@@ -90,7 +97,7 @@ class Image:
         # self.cm = np.array([xx, yy])
         self.cm = (xx.mean(), yy.mean()) if xx.size > 0 else (None, None)
              
-    def search_border(self):
+    def search_border(self, show = True, save = False):
         """
         Busca los pixels de frontera en una imagen binarizada, aquellos que estén rodeados 
         por pixels de distinto color. (up, down, right, left)
@@ -125,14 +132,16 @@ class Image:
             y = np.delete(y, index_y)
             x = np.delete(x, index_y)
 
-        plt.plot(x, y, 'ro') 
-        plt.imshow(self.image, cmap = 'gray')
-        plt.show()
+        if show:
+            plt.plot(x, y, 'ro') 
+            plt.imshow(self.image, cmap = 'gray')   
+            if save:
+                plt.savefig('./img/tfg_test/border.png', bbox_inches='tight', pad_inches=0)
+            plt.show()
 
         return x, y
     
-    
-    def circle_treatment(self, show = True):
+    def circle_treatment(self, show = True, save = False):
         """
         Given the coordinates x,y of a circles border, or segment of its border
         It will minimize through a Likelihood function the center (a,b) of the 
@@ -156,10 +165,12 @@ class Image:
         if show:
             plt.imshow(self.image, cmap = 'gray')   
             plt.scatter(a,b, s = 30, c = 'b')   
+            if save:
+                plt.savefig('./img/tfg_test/circ_center.png', bbox_inches='tight', pad_inches=0)
             plt.show()
 
 
-        return a,b 
+        return a,b
 
 
 class CircleFit(GenericLikelihoodModel):
@@ -202,10 +213,55 @@ class CircleFit(GenericLikelihoodModel):
 
         return -chi2
 
-    def fit(self, start_params=None, method='nm', maxiter=10000, **kwargs):
+    def fit(self, start_params=None, method='powell', maxiter=10000, **kwargs):
+        # method = nm, ha funcionado 
 
         if start_params is None:
             start_params =  [self.a, self.b, self.r]
         return super(CircleFit, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
 
+
+
+
+def test7():
+    fig = Image(cv2.imread('./img/tfg_test/fiducial.png'))
+    
+    fig.binarize().display(True)
+    fig.soften(8).display()
+    fig.find_cm()
+    fig.display(True)
+
+def test8():
+    fig = Image(cv2.imread('./img/tfg_test/circ1.png'))
+    # fig.binarize().display()
+    fig.soften(2).binarize(1.5).display(True)
+    fig.search_border(show=True, save=True)
+    fig.circle_treatment(show=True, save=True)
+
+def test9():
+    fig = Image(cv2.imread('./img/tfg_test/circ2.png'))
+    # fig.binarize().display()
+    fig.soften(16).binarize(2.5).display(True)
+    fig.search_border(show=True, save=True)
+    fig.circle_treatment(show=True, save=True)
+
+
+
+def main():
+    
+    import cv2
+    test9()
+    
+      
+   
+
+
+
+if __name__ == "__main__":
+
+    main()
+
+    
+
+    
 

@@ -150,10 +150,12 @@ def make_measurements(robot, print_points = False, print_forbidden_points = Fals
     return measurements, points
 
 
-def make_measurements_camera_pointing(robot, show: bool = False):
+def make_measurements_camera_pointing(robot, show: bool = False, N = 150):
     """
     Gets where the unitary vector of the camera points to, for every of all calibration points
     Excepting those that are close to R=60 or further.
+    Input:
+        N: number of points (5 measures for each)
     Output: 
         measurements: list of inner points 
         points: list of [x,y,z] for each point
@@ -163,18 +165,20 @@ def make_measurements_camera_pointing(robot, show: bool = False):
     camera_measurements = np.asarray([])
     points = np.asarray([])
 
-    for n, point in enumerate(robot.table.points):
+    random_index = np.random.choice(np.asarray(robot.table.actualPoints).shape[0], size = N, replace=False)
+    table_points = np.asarray(robot.table.actualPoints)[random_index]
+
+    for n, point in enumerate(table_points):
         
         point = [point[0] + np.random.normal(0, 0.02), point[1] + np.random.normal(0, 0.02), point[2] + robot.camera.focusdistance]
         # point = [point[0] + 0.05, point[1] + 0.05, point[2]]
 
         if robot.fromCartesianToInner(point)[0] != False and np.linalg.norm(point) < 50:
-
             # Measure from different angles
             for j in np.linspace(0, 2*np.pi, 5): 
  
-                # robot.cameraAim(point, j)
-                robot.cameraAim(point, 0)
+                robot.cameraAim(point, j)
+                # robot.cameraAim(point, 0)
 
                 x, y = robot.point3DToCameraProjection(point)
 
@@ -189,9 +193,8 @@ def make_measurements_camera_pointing(robot, show: bool = False):
 
                 
         else:
-            
             continue
-        
+
     n = int(len(points)/3)
     points = points.reshape([n, 3]) 
     camera_measurements = camera_measurements.reshape([n, 2]) 
