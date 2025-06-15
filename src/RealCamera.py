@@ -1,3 +1,11 @@
+"""
+Script defining Camera class and uses Image class. Enables the use of IDS cameras, and processing of 
+taken images. 
+
+Author: Raul Penagos
+Date: Feb 13th, 2025
+"""
+
 import ids_peak.ids_peak as ids_peak
 import ids_peak_ipl.ids_peak_ipl as ids_ipl
 import ids_peak.ids_peak_ipl_extension as ids_ipl_extension
