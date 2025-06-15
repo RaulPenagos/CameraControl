@@ -176,7 +176,8 @@ A matrix of reference points can be generated over the table.
 
 ## Scripts
 The `src` directory contains all the classes and scripts to run the code in order to simulate the system and calibrate the camera.
-The `test` includes tests donde to understand to check the functionalities. Also, it contain `moveRobot.py`, that moves the robot to a point an generates and saves an animation.
+
+The `test` dir includes tests donde to understand to check the functionalities. Also, it contains `moveRobot.py`, that moves the robot to a point an generates and saves an animation.
 
 
 
