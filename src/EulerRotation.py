@@ -1,7 +1,15 @@
+"""
+Euler Rotation class, to orientate objects.
+R(psi, theta, phi)
+Applied as:
+    phi -> Rotation on z axis
+    theta -> Rotation on x axis
+    psi -> Rotation on z axis
+"""
+
 import numpy as np
 import random
 import sys
-
 
 class EulerRotation():
 
@@ -140,6 +148,8 @@ class EulerRotation():
 def test_Euler():
     """
     Short script to Test if the matrix problem is solved correcty.
+    Los angulos no son unívocos: siempre hay dos soluciones posibles, y en theta = 0, el sistema esta 
+    degenerado con infinitas soluciones
 
     -De una matriz hay dos soluciones de (psi,theta,phi), arccos(theta) =  arccos(theta+pi)
     -Gimball Lock cuando theta = 0 

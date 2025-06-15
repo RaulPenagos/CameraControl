@@ -1,3 +1,7 @@
+"""
+Generate and save animations of a robot moving over points in the table
+"""
+
 import math
 import numpy as np
 import matplotlib.pyplot as plt

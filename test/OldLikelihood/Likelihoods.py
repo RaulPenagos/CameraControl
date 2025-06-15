@@ -914,7 +914,7 @@ class Calibration():
       # Ajustar modelo
       print(cal.loglike(params))
 
-   def calibratePos(self, show = False):
+   def calibrate_pos(self, show = False):
       print('Calibrating Position...')
 
       cal = MyLikelihoodxyz(self.real_points, [self.measurements, self.camera_measurements], self.robot2)
@@ -929,7 +929,7 @@ class Calibration():
 
       return results.params[0], results.params[1], results.params[2]
 
-   def calibratePos_xy(self, show = False):
+   def calibrate_pos_xy(self, show = False):
       print('Calibrating Position...')
 
       cal = MyLikelihoodxy(self.real_points, [self.measurements, self.camera_measurements], self.robot2)
@@ -1063,7 +1063,7 @@ class Calibration():
             
          # for t in np.linspace(0.2, 0, 10):
 
-         a,b,c = self.calibratePos()
+         a,b,c = self.calibrate_pos()
          a0, b0, c0 = self.robot2.camera.r0[0], self.robot2.camera.r0[0], self.robot2.camera.r0[0]
          da, db, dc = a - a0, b-b0, c-c0
          new_a, new_b, new_c = a0 + da * lr_pos, b0 + db * lr_pos, c0 + dc * lr_pos
@@ -1150,8 +1150,8 @@ def main():
    # Cal_test.calibrateAll(True)
    # Cal_test.calibrateAllbutZ(True)
    # Cal_test.calibrateAngles(True)
-   # Cal_test.calibratePos(True)
-   # Cal_test.calibratePos_xy(False)
+   # Cal_test.calibrate_pos(True)
+   # Cal_test.calibrate_pos_xy(False)
 
    # Cal_test.calibrateAltPsi(True)
    Cal_test.calibrateAltTheta(True)

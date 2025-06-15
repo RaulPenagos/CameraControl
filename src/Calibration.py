@@ -16,12 +16,13 @@ not be the same as the real camera's ones, due to the inlcination angles. But th
 equivalent (totally fine with angles up to 10 º), as you will find in the bin charts used
 to check simulated calibrations.
 
-Run the calibration from Calibration.py
+User may run the calibration as 
+    python3 src/Calibration.py
 
-Cosas que se pueden configurar:
-    -Parámetros del robot real, en una simulación de la realidad
+Customizable parameters:
+    -Parámetros del robot real, si se utiliza la simulación del robot real RealitySimulation
     -Parametros inciales de la estimación
-    -Numero de puntos para calibrar y testear
+    -Numero de puntos para calibrar y testear en RealitySimulation
     -Numero de orientaciones para hacer approach a cada punto
     -Hacer bin charts 
 
@@ -33,14 +34,16 @@ Date: February 12th 2025
 
 class RealitySimulation():
     """
-    Simulates the real environment where you have a robot, and make measurements for 
+    Simulates the real environment where you have a real robot, and make measurements for 
     several points of the table. 
     """
     
     def __init__(self):
         """
-        Defines and crates the real_robot(). And sets the points for calibration and test 
-        with the divide_points() function
+        Defines and crates a simulated real_robot(). And sets the points for calibration and test 
+        User can set the number of points on the real table that are going to be captured to be
+        used as calibration or testing of the calibration (with the divide_points() )
+
         """
         self.real_robot = self.create_real_robot()
         self.table = self.real_robot.table
@@ -55,6 +58,11 @@ class RealitySimulation():
         print(f'N Points test: \t {len(self.points_test)}')
     
     def create_real_robot(self):
+        """
+        Generates and returns a Robot object, to be used as 'real robot'
+        Returns
+            robot 
+        """
 
         fig = plt.figure(figsize = (16, 8), layout="constrained")
         gs0 = fig.add_gridspec(1, 2, width_ratios=[2, 1])
@@ -92,10 +100,14 @@ class RealitySimulation():
         
     def divide_points(self, number_of_test_points = 200, number_of_cal_points = 20, show: bool = False):
         """
-        Args:
-            number_of_cal_points:  the points you are using to calibrate the robot
-            number_of_test_points:  the points you are using to test the calibration
-            show: make a plot with the cal and test points on the table.
+        Given the real robot's table, selects 2 batches of random points on the table to be used to
+        calibrate the robot and to test the calibration.
+        Args
+            number_of_cal_points:  number of points you are using to calibrate the robot
+            number_of_test_points:  number of points you are using to test the calibration
+            show: would like to save a plot showing the cal and test points on the table?
+        Returns
+            ---
         """
         actualPoints = [point for point in self.real_robot.table.actualPoints if self.real_robot.fromCartesianToInner(point)[0] != False and np.linalg.norm(point) < 50]
 
@@ -133,16 +145,16 @@ class RealitySimulation():
      
     def make_camera_measurements(self, show: bool = False):
         """
-        Goes over all cal_points, and points them with the camera of the robot, saving the 
-        needed coordinates. Takes pictures of the point approaching from different angles,
+        Goes over all cal_points, aims them using the camera of the robot, saving the 
+        pertinent coordinates. Takes pictures of the point approaching from different angles Jz,
         this way you get more calibration data for just one point in the desk.
 
-        Input:
-            show: show a table with the points on shell
-        Output: 
-            measurements: list of inner points 
-            points: list of [x,y,z] for each point
-            camera_measurements: [X,Y] projection of every point on cameras CCD
+        Args
+            show: would like to show a table with the points on shell?
+        Returns 
+            measurements: list of inner points (inner coordinates of the robot to reach the point)
+            points: list of [x,y,z], 3D coordinates for each point
+            camera_measurements: [X,Y] projection of every point on camera's CCD
         """
 
         measurements = np.asarray([])
@@ -152,7 +164,7 @@ class RealitySimulation():
         for n, point in enumerate(self.points_cal):
             
             # define the point where we want to move the robot (cameraAim takes into account 
-            # focal distance apart from the point)
+            # focal distance apart from the point). Move it close to the point
             point = [ point[0] + random.normalvariate(0, 0.01),
                      point[1] + random.normalvariate(0, 0.01),
                      point[2]]
@@ -205,16 +217,27 @@ class RealitySimulation():
 
 
 class Calibration():
+    """
+    Calibration class uses a RealitySimulation, takes its calibration points
+    and, from an initial estimation robot2, calculates the parameters of its camera2
+    in order to replicate robot1 (the real one).
+    Methods
+        create_robot_estimation() Creates the initial estimation
+        calibrate_pos() Using the calibration points, updates robot2's camera to replicate robot1
+        test_calibration() Compare the robot2 and robot1 to check the calibration, using the test points
+
+    """
     def __init__(self, calibrate:bool = True):
         """
+        Generator of the class
         Args:
-            Calibrate: wheter you want to make calibration (Likelihood) 
-                       or directly use the parameters data from dictionary.
+            Calibrate: wheter you want to make calibration (using Likelihood) 
+                       or directly use parameters data from self.calibration_params dictionary.
         """
 
         self.reality = RealitySimulation()
         self.robot1 = self.reality.real_robot  # real robot
-        self.robot2 = self.create_robot_estimation(5.00, 0.0, 10.0, 0, 0, 0) # estimation robot
+        self.robot2 = self.create_robot_estimation(5.00, 0.0, 10.0) # estimation robot
 
         # Simulo las medidas reales, con robot1 real
         measurements, points, camera_measurements = self.reality.make_camera_measurements(False)
@@ -233,12 +256,14 @@ class Calibration():
 
         # calibrate = False
         if calibrate:
-            self.calibration_params['x'], self.calibration_params['y'] = self.calibratePos(True)
+            self.calibration_params['x'], self.calibration_params['y'] = self.calibrate_pos(True)
 
-
-    def create_robot_estimation(self, x = 5.0, y = 0.0, z = 10.0, psi = 0.00, theta =  0.00, phi = 0.00):
+    def create_robot_estimation(self, x = 5.0, y = 0.0, z = 10.0):
         """
-        Args: the initial parameters for the estimation of the camera position and orientation
+        Creates a Robot object that in this class will be used as robot estimation. You can set
+        the initial values for the camera estimation
+        Args
+            x, y, z: The parameters for the camera position
         """
         fig = plt.figure(figsize = (16, 8), layout="constrained")
         gs0 = fig.add_gridspec(1, 2, width_ratios=[2, 1])
@@ -266,14 +291,14 @@ class Calibration():
         table = Table(0.01, 0.0)
 
         # Generate the camera  
-        camera = Camera(x, y, z, psi, theta, phi, cx = 1, cy = 1, focaldistance = 20, sigmaCamera = 0.001)
+        camera = Camera(x, y, z, psi = 0, theta = 0, phi = 0, cx = 1, cy = 1, focaldistance = 20, sigmaCamera = 0.001)
 
         # Generate the robot
         robot = Robot(60.77, 38.0, 24.0, 34.0, table, camera, fig, ax1, ax2, ax3)
 
         return robot
 
-    def calibratePos(self, show = True):
+    def calibrate_pos(self, show = True):
         print('\n Calibrating Position...\n')
 
         # Crear modelo likelihood
@@ -369,7 +394,13 @@ class Calibration():
 
 def select_uniform_elements(lst, x):
     """
-    Gets x uniform distributed elements from lst
+    Gets x uniform distributed elements from a list lst
+    Args
+        lst: list to extract elements
+    Output
+        selected 
+        rest
+        indices
     """
     L = len(lst)
     # Calculate uniformly spaced indices

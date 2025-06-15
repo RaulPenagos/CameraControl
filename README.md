@@ -127,7 +127,10 @@ $ python3 test/moveRobot.py
 
 
 
-## Code Structure
+## Main Clasees 
+The main classes to use the code are Robot, Camera and Table
+
+
 1. `Robot.py` - Defines the `Robot` class, with the following attributes that describe the SCARA robot:
 
 - h: height of the robot arms
@@ -137,10 +140,7 @@ $ python3 test/moveRobot.py
 - table: `table` where the robot is located
 - camera: `camera` linked to the robot
 - fig, ax1, ax2, ax3: `plt` figure and axis to make a plot or animation of the robot
-
-It's main methods are:
-
-Read the classto check its methods, they are self explanatory.
+Read the class to check its methods, they are self explanatory.
 
 2. `Camera.py` - Defines `Camera` class, cameras liked to a `Robot` with the following parameters. The camera is described with a pinhole model. In order to get a realistic proyection of the points in the camera's CCD, the camera must be like:
 
@@ -155,7 +155,6 @@ b: focusdistance = 3.6 cm
 Basically, make sure that the camera is 3.6 cm above a point when taking a picture of it.
 
 Attributes:
-
 - r0:  `(xyz)` position of the camera with respect to the robots pointer
 - rotation0:  `EulerRotation(psi, theta, phi)` of the camera in its position
 - sigmaCamera: not used
@@ -172,6 +171,12 @@ Attributes:
 - tolerance:  not used
 - z: level height of the table (z=0)
 
-Cool part is that a matrxi of reference points can be generated.
+A matrix of reference points can be generated over the table.
+
+
+## Scripts
+The `src` directory contains all the classes and scripts to run the code in order to simulate the system and calibrate the camera.
+The `test` includes tests donde to understand to check the functionalities. Also, it contain `moveRobot.py`, that moves the robot to a point an generates and saves an animation.
+
 
 
