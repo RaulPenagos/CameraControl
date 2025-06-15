@@ -9,12 +9,11 @@ from img.histograms import *
 from src.Likelihoodxy import *
 
 """
-This Script includes a Likelihood function capable of finding the camera's parameters 
-by taking pictures of the points and minimizing the difference in positions. The parameters 
-[x,y]_c, may not be the same as the real camera's ones, due to the inlcination angles. But 
-the result will be equivalent (totally fine with angles up to 10 º), as you will find 
+This Script includes a Likelihood function capable of finding camera's r0(x,y) parameters 
+by taking pictures of the points and minimizing the difference in their positions. The parameters 
+[x,y]_c, may not be the same as the real camera's ones, due to the pitch/roll/yaw angles. But 
+the result will be equivalent (works totally fine with angles up to 10 º), as you will find 
 in the bin charts used to check simulated calibrations.
-
 
 
 Author: Raul Penagos
@@ -31,14 +30,14 @@ class MyLikelihoodxy(GenericLikelihoodModel):
         
         Input:
             endog (array):  reference postions [[X1, Y1, Z1], [X2, Y2, Z2], ...] for each point
-            exog (array): measurements [innerpoint_1, [X, Y]_1, innerpoint_2, [X, Y]_2, ....] 
-            robot: robot cuyos parametros quiero optimizar (la estimación inicial)
-            **kwds: otros params. (vacio)
+            exog (array): measurements with the real robot [innerpoint_1, [X, Y]_1, innerpoint_2, [X, Y]_2, ....] 
+            robot: robot used as a first estimation for the parameters of the real one.
+            **kwds: other params. (void)
 
         Example of Use:
             cal = MyLikelihoodxy(self.real_points, [self.measurements, self.camera_measurements], self.robot2)
-        
-            # Ajustar modelo
+    
+            # Fit the model
             results = cal.fit() 
 
         """

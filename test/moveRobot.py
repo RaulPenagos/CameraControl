@@ -50,27 +50,29 @@ def main():
 
 
     pos_J = (1.4496846765933695, -2.3673601581311843, 39.41379211339806, 2.223481693056126)
+
+    print(len(table.actualPoints))
     pos = innerpoint(pos_J[0], pos_J[1], 0, pos_J[3])
 
 
     print('Animation')
-    # ani = robot.animatedMove(robot.currentPos, 3)
-    # ani = robot.animatedMove(pos, 20)
-    # plt.show()
-    # ani.save("animacion.gif", writer="ffmpeg")
+    ani = robot.animatedMove(robot.currentPos, 3)
+    ani = robot.animatedMove(pos, 20)
+    plt.show()
+    ani.save("animacion.gif", writer="ffmpeg")
 
 
-    robot.MoveRobotTo(pos)
-    robot.cameraAim([25, -25, 0])
+#     robot.MoveRobotTo(pos)
+#     robot.cameraAim([25, -25, 0])
 
-    print(robot.currentCartesianPos.r)
-    print(robot.currentPos.Z)
-    print('r0 Camera', robot.camera.r0)
-    print('Pos Camera:', robot.camera.cartesianpos.r)
-    print('Camera rotation:')
-    print('psi: ', robot.camera.rotation0.psi)
-    print('theta: ', robot.camera.rotation0.theta)
-    print('phi: ', robot.camera.rotation0.phi)    
+#     print(robot.currentCartesianPos.r)
+#     print(robot.currentPos.Z)
+#     print('r0 Camera', robot.camera.r0)
+#     print('Pos Camera:', robot.camera.cartesianpos.r)
+#     print('Camera rotation:')
+#     print('psi: ', robot.camera.rotation0.psi)
+#     print('theta: ', robot.camera.rotation0.theta)
+#     print('phi: ', robot.camera.rotation0.phi)    
 
     
 

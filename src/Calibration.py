@@ -231,7 +231,7 @@ class Calibration():
 
         self.calibration_params = {'x': None, 'y': None}
 
-        calibrate = False
+        # calibrate = False
         if calibrate:
             self.calibration_params['x'], self.calibration_params['y'] = self.calibratePos(True)
 
@@ -358,8 +358,8 @@ class Calibration():
             DELTAX = np.append(DELTAX, dx)
             DELTAY = np.append(DELTAY, dy)
 
-        # print(len(DELTAX), max(DELTAX), min(DELTAX), np.mean(DELTAX))
-        # print(len(DELTAY), max(DELTAY), min(DELTAY), np.mean(DELTAY))
+        print(len(DELTAX), max(DELTAX), min(DELTAX), np.mean(DELTAX))
+        print(len(DELTAY), max(DELTAY), min(DELTAY), np.mean(DELTAY))
 
         # MAke Bin charts for the deviation DELTAX and DELTAY ########################################
 
